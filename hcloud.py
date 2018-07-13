@@ -11,6 +11,8 @@ from hetznercloud.floating_ips import HetznerCloudFloatingIp
 import ocf
 import socket
 import ifaddr
+import os
+import time
 
 #
 # The HostFinder searches for the hetzner cloud api server which manages the
@@ -24,7 +26,7 @@ import ifaddr
 # Match hostname to servername
 #
 #
-class MyHostFinder:
+class IpHostFinder:
     def find(self, client) -> HetznerCloudServer:
         my_ips = []
         adapters = ifaddr.get_adapters()
@@ -37,6 +39,31 @@ class MyHostFinder:
                 return server
         raise EnvironmentError('Host not found in hcloud api.')
 
+class HostnameHostFinder():
+    def find(self, client) -> HetznerCloudServer:
+        hostname = socket.gethostname()
+        servers = client.servers().get_all(name=hostname)
+        if len(servers) < 1:
+            raise EnvironmentError('Host '+hostname+' not found in hcloud api.')
+        return servers[0]
+
+class TestHostFinder():
+    def find(self, client) -> HetznerCloudServer:
+        name = os.environ.get('TESTHOST')
+        servers = client.servers().get_all(name=name)
+        if len(servers) < 1:
+            raise EnvironmentError('Host '+name+' not found in hcloud api.')
+        return servers[0]
+
+def makeHostFinder(type) -> HetznerCloudServer:
+    if type == 'public-ip':
+        return IpHostFinder()
+    if type == 'hostname':
+        return HostnameHostFinder()
+    if type == 'test':
+        return TestHostFinder()
+    raise KeyError('Unkown host finder type')
+
 class IpFinder:
      def find(self, client, address) -> HetznerCloudFloatingIp:
          for floatingIp in client.floating_ips().get_all():
@@ -46,7 +73,6 @@ class IpFinder:
 
 class FloatingIp(ocf.ResourceAgent):
     def __init__(self):
-        self.hostFinder = MyHostFinder()
         self.ipFinder = IpFinder()
 
         ocf.ResourceAgent.__init__(self, 'floating_ip', '0.1.0', 'Manage Hetzner Cloud Floating Ips',
@@ -80,9 +106,27 @@ class FloatingIp(ocf.ResourceAgent):
                 Activate the second tab `Api Tokens` and create a new token.
                 ''',
                 required=True, unique=False)
+        self.finderType = ocf.Parameter('host_finder', default='public-ip', shortDescription='Host finder' ,
+                description='''
+                Implementation to use for matching the host this agent is running on to the host in the api
+
+                Available implementations:
+                - public-ip: The public ipv4 address listed in the api is present on any adapter on the host
+                - hostname: The hosts `hostname` matches the server name in the api
+                - test: 
+                ''',
+                required=False, unique=False)
+        self.sleep = ocf.Parameter('sleep', default='1', shortDescription='Sleep duration when an api request fails' ,
+                description='''
+                The number of seconds to wait before trying again when an api request fails from something other than
+                a insufficient permissions
+                ''',
+                required=False, unique=False)
         self.parameters = [
                 self.floatingIp,
-                self.apiToken
+                self.apiToken,
+                self.finderType,
+                self.sleep
         ]
         self.setHint('start', 'timeout', '10')
 
@@ -92,15 +136,47 @@ class FloatingIp(ocf.ResourceAgent):
     def populated(self):
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
+        self.wait = int( self.sleep.get() )
 
     def start(self):
-        server = self.hostFinder.find(self.client)
-        ip = self.ipFinder.find(self.client)
-        print('Start!')
+        success = False
+        hostFinder = makeHostFinder( self.finderType.get() )
+        while not success:
+            try:
+                server = self.hostFinder.find( self.client )
+            except HetznerActionException:
+                time.sleep( self.wait )
+
+        success = False
+        while not success:
+            try:
+                ip = self.ipFinder.find( self.client )
+                ip.assign_to_server( server.id )
+                success = True
+            except HetznerActionException:
+                time.sleep( self.wait )
 
     def stop(self):
         return ocf.ReturnCodes.success
 
     def monitor(self):
-        server = self.hostFinder.find(self.client)
-        ip = self.ipFinder.find(self.client)
+        isActive = False
+
+        hostFinder = makeHostFinder( self.finderType.get() )
+        success = False
+        while not success:
+            try:
+                server = self.hostFinder.find( self.client )
+            except HetznerActionException:
+                time.sleep( self.wait )
+
+        success = False
+        while not success:
+            try:
+                ip = self.ipFinder.find( self.client )
+                if ip.server == server.id:
+                    isActive = True
+                success = True
+            except HetznerActionException:
+                time.sleep( self.wait )
+        return isActive
