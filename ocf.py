@@ -17,7 +17,8 @@ class ReturnCodes:
     hasInsufficientPermissions = 4
     isMissingRequiredComponent = 5
     isMissconfigured = 6
-    isNotRunning = 7 isRunningMaster = 8
+    isNotRunning = 7
+    isRunningMaster = 8
     isFailedMaster = 9
 
 class Api:
