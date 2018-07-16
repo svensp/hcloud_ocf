@@ -13,6 +13,7 @@ import socket
 import ifaddr
 import os
 import time
+import stonith
 
 #
 # The HostFinder searches for the hetzner cloud api server which manages the
@@ -40,9 +41,11 @@ class IpHostFinder:
         raise EnvironmentError('Host not found in hcloud api.')
 
 class HostnameHostFinder():
+    def __init__(self, hostname):
+        self.hostname = hostname
+
     def find(self, client) -> HetznerCloudServer:
-        hostname = socket.gethostname()
-        servers = client.servers().get_all(name=hostname)
+        servers = client.servers().get_all(name=self.hostname)
         if len(servers) < 1:
             raise EnvironmentError('Host '+hostname+' not found in hcloud api.')
         return servers[0]
@@ -59,7 +62,8 @@ def makeHostFinder(type) -> HetznerCloudServer:
     if type == 'public-ip':
         return IpHostFinder()
     if type == 'hostname':
-        return HostnameHostFinder()
+        hostname = socket.gethostname()
+        return HostnameHostFinder(hostname)
     if type == 'test':
         return TestHostFinder()
     raise KeyError('Unkown host finder type')
@@ -162,21 +166,128 @@ class FloatingIp(ocf.ResourceAgent):
     def monitor(self):
         isActive = False
 
-        hostFinder = makeHostFinder( self.finderType.get() )
-        success = False
-        while not success:
-            try:
-                server = self.hostFinder.find( self.client )
-            except HetznerActionException:
-                time.sleep( self.wait )
+        try:
+            hostFinder = makeHostFinder( self.finderType.get() )
+            success = False
+            while not success:
+                try:
+                    server = self.hostFinder.find( self.client )
+                except HetznerActionException:
+                    time.sleep( self.wait )
 
-        success = False
-        while not success:
-            try:
-                ip = self.ipFinder.find( self.client )
-                if ip.server == server.id:
-                    isActive = True
-                success = True
-            except HetznerActionException:
-                time.sleep( self.wait )
+            success = False
+            while not success:
+                try:
+                    ip = self.ipFinder.find( self.client )
+                    if ip.server == server.id:
+                        isActive = True
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except HetznerActionException:
+                    time.sleep( self.wait )
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return ocf.ReturnCodes.isMissconfigured
         return isActive
+
+class Stonith():
+    def __init__(self):
+        self.sleep = ocf.Parameter('sleep', default="1", shortDescription='Time in seconds to sleep on failed api requests' ,
+                description='''
+                If a request to the hetzner api fails then the device will retry the request after the number of
+                seconds specified here, or 1 second by default.
+
+                Exceptions to this are:
+                Requests which failed due to the rate limit will sleep for 5 times the time set here
+
+                Requests which failed due to insufficient permissions will not be retried and will
+                cause the device to error out.
+                This is because as of the time writing this there are not scopes for api tokens. If
+                a request is denied by the api the token was most likely deleted
+                ''',
+                required=False, unique=False)
+        self.apiToken = ocf.Parameter('htoken', shortDescription='Hetner Cloud api token' ,
+                description='''
+                The Hetzner Cloud api token with which the ip address can be managed.
+
+                You can create this in the Hetner Cloud Console. Select the project
+                which contains your Ip-Address, then select `Access` on the leftside menu
+                Activate the second tab `Api Tokens` and create a new token.
+                ''',
+                required=True, unique=False)
+        self.hostnameToApi = ocf.Parameter('hostname_to_api', shortDescription='hostname:apiname - only match the given hostname, reset the server with the given api name' ,
+                description='''
+                When this parameter is given then the stonith device switches to a different mode.
+                Format: hostname:apiname[,hostname2:apiname2]
+
+                Default Mode:
+                The names of all servers present in the api project are reported as managed.
+                Finding the api server to manage is done by looking for an api server with 'hostname' as its name.
+                -> The hostnames MUST match the servers name in the api
+
+                hostname_to_api Mode:
+                Only the give 'hostnames' are reported as managed
+                Finding  the api server to manage is done by looking for an api server with the matching 'apiname' as its name
+                -> hostnames can be mapped to server names in the api
+                ''',
+                required=False, unique=False)
+
+        self.parameters = [
+                self.apiToken,
+                self.hostnameToApi,
+                self.sleep,
+        ]
+
+    def getParameters(self):
+        return self.parameters
+    
+    def setHost(self, host):
+        if self.hostnameToApi.get():
+            self.hostFinder = HostnameHostFinder(host)
+        self.hostFinder = HostnameHostFinder(host)
+            
+
+    def populated(self):
+        configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
+        self.client = HetznerCloudClient(configuration)
+        self.wait = int( self.sleep.get() )
+
+    def getHosts(self):
+        if self.hostnameToApi.get():
+            hostnames = []
+            hostlist = self.hostnameToApi.get().split(',')
+            for host in hostlist:
+                host.spit(':')
+                hostnames.append(host[0])
+            print( ' '.join(hostnames) )
+            return stonith.ReturnCodes.success
+                
+            
+        hosts = list(self.client.servers().get_all())
+        if not len( hosts ):
+            return stonith.ReturnCodes.isMissconfigured
+            
+        hostnames = []
+        for host in hosts:
+            hostnames.append(host.name)
+            
+
+        print( ' '.join(hostnames) )
+            
+        return stonith.ReturnCodes.success
+
+    def powerReset(self):
+        host = self.hostFinder.find(self.client)
+
+    def status(self):
+        pass
+
+    def infoDevId(self):
+        pass
+
+    def infoDevName(self):
+        pass
+
+    def infoDescription(self):
+        pass

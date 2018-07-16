@@ -26,5 +26,3 @@ if __name__ == '__main__':
     except AssertionError:
         code = ocf.ReturnCodes.isMissconfigured
     sys.exit( code )
-
-sys.exit( ocf.ReturnCodes.genericError )

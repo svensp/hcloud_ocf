@@ -5,26 +5,24 @@
 #   License:      MIT
 #   (c) 2018Sven Speckmaier
 
-import ocf
+import stonith
 import hcloud
 import sys
 
 if __name__ == '__main__':
-    application = ocf.AgentRunner()
-    resourceAgent = hcloud.FloatingIp()
-    api = ocf.Api()
+    application = stonith.Runner()
+    resourceAgent = hcloud.Stonith()
+    api = stonith.Api()
 
     try:
         action = api.action()
     except AssertionError:
         print("Error: Missing action")
-        sys.exit( ocf.ReturnCodes.invalidArguments )
+        sys.exit( stonith.ReturnCodes.invalidArguments )
 
 
     try:
-        code = application.run(resourceAgent, api.action()) 
+        code = application.run( resourceAgent, api.action() )
     except AssertionError:
-        code = ocf.ReturnCodes.isMissconfigured
+        code = stonith.ReturnCodes.isMissconfigured
     sys.exit( code )
-
-sys.exit( ocf.ReturnCodes.genericError )
