@@ -5,9 +5,9 @@
 #   License:      MIT
 #   (c) 2018Sven Speckmaier
 
+import sys
 import stonith
 import hcloud
-import sys
 
 if __name__ == '__main__':
     application = stonith.Runner()

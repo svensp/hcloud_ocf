@@ -1,23 +1,27 @@
 #!/bin/sh
 
 if [ -d build ] ; then
-	rm -Rf build
+	sudo rm -Rf build
 fi
 
 DIR=$(pwd)
 
 mkdir ${DIR}/build
 
-cp -r -L ${DIR}/floating_ip ${DIR}/build/floating_ip_build
+FLOATING_IP_DIR="${DIR}/build/floating_ip_build"
+cp -r -L ${DIR}/floating_ip "${FLOATING_IP_DIR}"
 cd "${DIR}/build/floating_ip_build"
-zip "${DIR}/build/floating_ip.zip" *
-echo '#!/usr/bin/env python3' | cat - "${DIR}/build/floating_ip.zip" > "${DIR}/build/floating_ip"
-chmod +x  "${DIR}/build/floating_ip"
+sudo python3 -m pip install hetznercloud --target .
+sudo python3 -m pip install ifaddr --upgrade --target .
+sudo python3 -m pip install lxml --upgrade --target .
+python3 -m zipapp -p '/usr/bin/env python3' --output "${DIR}/build/floating_ip" "${FLOATING_IP_DIR}"
 
-cp -r -L "${DIR}/stonith" "${DIR}/build/stonith_build"
+STONITH_DIR="${DIR}/build/stonith_build"
+cp -r -L "${DIR}/stonith" "${STONITH_DIR}"
 cd "${DIR}/build/stonith_build"
-zip "${DIR}/build/stonith.zip" *
-echo '#!/usr/bin/env python3' | cat - "${DIR}/build/stonith.zip" > "${DIR}/build/stonith"
-chmod +x  "${DIR}/build/stonith"
+sudo python3 -m pip install hetznercloud --target .
+sudo python3 -m pip install ifaddr --upgrade --target .
+sudo python3 -m pip install lxml --upgrade --target .
+python3 -m zipapp -p '/usr/bin/env python3' --output "${DIR}/build/hetzner_cloud" "${STONITH_DIR}"
 
 cd ${DIR}
