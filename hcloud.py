@@ -46,7 +46,7 @@ class HostnameHostFinder():
         self.hostname = hostname
 
     def find(self, client) -> HetznerCloudServer:
-        servers = client.servers().get_all(name=self.hostname)
+        servers = list(client.servers().get_all(name=self.hostname))
         if len(servers) < 1:
             raise EnvironmentError('Host '+hostname+' not found in hcloud api.')
         return servers[0]
@@ -245,7 +245,14 @@ class Stonith():
     
     def setHost(self, host):
         if self.hostnameToApi.get():
-            self.hostFinder = HostnameHostFinder(host)
+            hostlist = self.hostnameToApi.get().split(',')
+            for hostToApi in hostlist:
+                hostname, apiname = hostToApi.split(':')
+                if hostname == host:
+                    self.hostFinder = HostnameHostFinder(apiname)
+                    return
+            raise KeyError
+            return
         self.hostFinder = HostnameHostFinder(host)
             
 
@@ -288,8 +295,17 @@ class Stonith():
             
         return stonith.ReturnCodes.success
 
+    def powerOn(self):
+        host = self.hostFinder.find(self.client)
+        host.power_on()
+
+    def powerOff(self):
+        host = self.hostFinder.find(self.client)
+        host.power_off()
+
     def powerReset(self):
         host = self.hostFinder.find(self.client)
+        host.reset()
 
     def status(self):
         try:
