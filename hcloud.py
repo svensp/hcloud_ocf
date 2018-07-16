@@ -8,6 +8,7 @@
 from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient
 from hetznercloud.servers import HetznerCloudServer
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
+from hetznercloud.exceptions import HetznerAuthenticationException, HetznerInternalServerErrorException, HetznerActionException, HetznerRateLimitExceeded
 import ocf
 import socket
 import ifaddr
@@ -252,22 +253,32 @@ class Stonith():
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
         self.wait = int( self.sleep.get() )
+        self.rateLimitWait = int( self.sleep.get() ) * 5 
 
     def getHosts(self):
         if self.hostnameToApi.get():
             hostnames = []
             hostlist = self.hostnameToApi.get().split(',')
             for host in hostlist:
-                host.spit(':')
+                host.split(':')
                 hostnames.append(host[0])
             print( ' '.join(hostnames) )
             return stonith.ReturnCodes.success
                 
             
-        hosts = list(self.client.servers().get_all())
-        if not len( hosts ):
-            return stonith.ReturnCodes.isMissconfigured
-            
+        success = False
+        while not success:
+            try:
+                hosts = list(self.client.servers().get_all())
+                success = True
+            except HetznerAuthenticationException:
+                print('Error: Cloud Api returned Authentication error. Token deleted?')
+                return stonith.ReturnCodes.isMissconfigured
+            except HetznerInternalServerErrorException:
+                time.sleep( self.wait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
+
         hostnames = []
         for host in hosts:
             hostnames.append(host.name)
@@ -281,13 +292,41 @@ class Stonith():
         host = self.hostFinder.find(self.client)
 
     def status(self):
-        pass
+        try:
+            success = False
+            while not success:
+                try:
+                    list( self.client.servers().get_all() )
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep(self.wait)
+                except HetznerRateLimitExceeded:
+                    time.sleep(self.rateLimitWait)
 
-    def infoDevId(self):
-        pass
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return stonith.ReturnCodes.isMissconfigured
+        return stonith.ReturnCodes.success
 
-    def infoDevName(self):
-        pass
+    def infoId(self):
+        print ("hetzner_cloud")
+        return stonith.ReturnCodes.success
+
+    def infoName(self):
+        print ("hetzner_cloud")
+        return stonith.ReturnCodes.success
+
+    def infoUrl(self):
+        print ("https://github.com/svensp/hcloud_ocf")
+        return stonith.ReturnCodes.success
 
     def infoDescription(self):
-        pass
+        print ('''
+        Use the hetzner cloud api as stonith device for your cluster.
+        
+        If your hostnames match your server names in the api then only an api token
+        is required. Otherwise you can set a list of hostnames to apinames with the
+        hostname_to_api paramter.
+        Format: hostname:apiname[,hostname2:apiname2]
+        ''')
+        return stonith.ReturnCodes.success

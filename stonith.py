@@ -42,9 +42,10 @@ class StonithActionBuilder:
             "reset": resource.powerReset,
             "status": resource.status,
             "getconfignames": lambda : runner.getConfigNames(resource),
-            "getinfo-devid": resource.infoDevId,
-            "getinfo-devname": resource.infoDevName,
+            "getinfo-devid": resource.infoId,
+            "getinfo-devname": resource.infoName,
             "getinfo-devdescr": resource.infoDescription,
+            "getinfo-devurl": resource.infoUrl,
             "getinfo-xml": lambda : runner.metaData(resource),
         }
 
