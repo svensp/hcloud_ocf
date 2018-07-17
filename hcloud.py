@@ -123,7 +123,7 @@ class FloatingIp(ocf.ResourceAgent):
                 - test: 
                 ''',
                 required=False, unique=False)
-        self.sleep = ocf.Parameter('sleep', default='1', shortDescription='Sleep duration when an api request fails' ,
+        self.sleep = ocf.Parameter('sleep', default='2', shortDescription='Sleep duration when an api request fails' ,
                 description='''
                 The number of seconds to wait before trying again when an api request fails from something other than
                 a insufficient permissions
@@ -146,6 +146,7 @@ class FloatingIp(ocf.ResourceAgent):
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
         self.wait = int( self.sleep.get() )
+        self.rateLimitWait = int( self.sleep.get() ) * 5 
 
     def start(self):
         success = False
@@ -157,6 +158,8 @@ class FloatingIp(ocf.ResourceAgent):
                 time.sleep( self.wait )
             except HetznerInternalServerErrorException:
                 time.sleep( self.wait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
 
         success = False
         while not success:
@@ -168,6 +171,8 @@ class FloatingIp(ocf.ResourceAgent):
                 time.sleep( self.wait )
             except HetznerInternalServerErrorException:
                 time.sleep( self.wait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
@@ -188,6 +193,8 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
                     time.sleep( self.wait )
+                except HetznerRateLimitExceeded:
+                    time.sleep( self.rateLimitWait )
 
             success = False
             while not success:
@@ -200,6 +207,8 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.wait )
                 except HetznerActionException:
                     time.sleep( self.wait )
+                except HetznerRateLimitExceeded:
+                    time.sleep( self.rateLimitWait )
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
@@ -207,7 +216,7 @@ class FloatingIp(ocf.ResourceAgent):
 
 class Stonith():
     def __init__(self):
-        self.sleep = ocf.Parameter('sleep', default="1", shortDescription='Time in seconds to sleep on failed api requests' ,
+        self.sleep = ocf.Parameter('sleep', default="2", shortDescription='Time in seconds to sleep on failed api requests' ,
                 description='''
                 If a request to the hetzner api fails then the device will retry the request after the number of
                 seconds specified here, or 1 second by default.
