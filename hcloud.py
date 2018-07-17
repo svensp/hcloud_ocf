@@ -102,7 +102,7 @@ class FloatingIp(ocf.ResourceAgent):
                 itself.
                 ''',
                 required=True, unique=True)
-        self.apiToken = ocf.Parameter('htoken', shortDescription='Hetner Cloud api token' ,
+        self.apiToken = ocf.Parameter('api_token', shortDescription='Hetner Cloud api token' ,
                 description='''
                 The Hetzner Cloud api token with which the ip address can be managed.
 
@@ -139,6 +139,8 @@ class FloatingIp(ocf.ResourceAgent):
         return self.parameters
 
     def populated(self):
+        if not self.apiToken.get():
+            return
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
         self.wait = int( self.sleep.get() )
@@ -208,7 +210,7 @@ class Stonith():
                 a request is denied by the api the token was most likely deleted
                 ''',
                 required=False, unique=False)
-        self.apiToken = ocf.Parameter('htoken', shortDescription='Hetner Cloud api token' ,
+        self.apiToken = ocf.Parameter('api_token', shortDescription='Hetner Cloud api token' ,
                 description='''
                 The Hetzner Cloud api token with which the ip address can be managed.
 
@@ -257,6 +259,8 @@ class Stonith():
             
 
     def populated(self):
+        if not self.apiToken.get():
+            return
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
         self.wait = int( self.sleep.get() )

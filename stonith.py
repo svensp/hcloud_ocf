@@ -61,7 +61,14 @@ class Runner:
         return ReturnCodes.notImplemented
 
     def run(self, resource, action):
-        self.populater.populate(resource)
+        validate = True
+
+        if 'getinfo-' in action:
+            validate = False
+        if 'getconfig' in action:
+            validate = False
+
+        self.populater.populate(resource, validate)
 
         actions = self.actionBuilder.build(self, self, resource)
 
@@ -73,12 +80,18 @@ class Runner:
 
         return actionMethod()
 
+    def getConfigNames(self, resource):
+        names = []
+        for parameter in resource.getParameters():
+            names.append(parameter.getName())
+
+        print( '\n'.join(names) )
+            
 
     def metaData(self, resource):
         root = ET.Element('parameters')
         self.parameterBuilder.build(root, resource.getParameters() )
         tree = ET.ElementTree(root)
         print( ET.tostring(tree, encoding="UTF-8",
-                     xml_declaration=True,
-                     pretty_print=True,
-                     doctype='<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">'))
+                     xml_declaration=False,
+                     pretty_print=True).decode('utf-8') )

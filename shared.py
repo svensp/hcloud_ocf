@@ -27,10 +27,10 @@ class Populater:
     def __init__(self, api):
         self.api = api
 
-    def populate(self, resource):
+    def populate(self, resource, validate = True):
         for parameter in resource.getParameters():
             value = self.api.variable( parameter.getName() )
-            if parameter.isRequired():
+            if validate and parameter.isRequired():
                 try:
                     assert not value == None
                     assert not value == ''
