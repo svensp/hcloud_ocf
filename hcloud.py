@@ -46,7 +46,9 @@ class HostnameHostFinder():
         self.hostname = hostname
 
     def find(self, client) -> HetznerCloudServer:
-        servers = list(client.servers().get_all(name=self.hostname))
+        success = False
+        while not success:
+            servers = list(client.servers().get_all(name=self.hostname))
         if len(servers) < 1:
             raise EnvironmentError('Host '+hostname+' not found in hcloud api.')
         return servers[0]
@@ -153,6 +155,8 @@ class FloatingIp(ocf.ResourceAgent):
                 server = self.hostFinder.find( self.client )
             except HetznerActionException:
                 time.sleep( self.wait )
+            except HetznerInternalServerErrorException:
+                time.sleep( self.wait )
 
         success = False
         while not success:
@@ -162,6 +166,11 @@ class FloatingIp(ocf.ResourceAgent):
                 success = True
             except HetznerActionException:
                 time.sleep( self.wait )
+            except HetznerInternalServerErrorException:
+                time.sleep( self.wait )
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return ocf.ReturnCodes.isMissconfigured
 
     def stop(self):
         return ocf.ReturnCodes.success
@@ -176,6 +185,8 @@ class FloatingIp(ocf.ResourceAgent):
                 try:
                     server = self.hostFinder.find( self.client )
                 except HetznerActionException:
+                    time.sleep( self.wait )
+                except HetznerInternalServerErrorException:
                     time.sleep( self.wait )
 
             success = False
