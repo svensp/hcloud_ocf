@@ -47,19 +47,12 @@ class IpHostFinder:
 class HostnameHostFinder():
     def __init__(self, hostname):
         self.hostname = hostname
-        self.rateLimitWait = 10
-        self.serverErrorWait = 5
 
     def find(self, client) -> HetznerCloudServer:
         success = False
         while not success:
-            try:
-                servers = list(client.servers().get_all(name=self.hostname))
-                success = True
-            except HetznerInternalServerErrorException:
-                time.sleep( self.serverErrorWait )
-            except HetznerRateLimitExceeded:
-                time.sleep( self.rateLimitWait )
+            servers = list(client.servers().get_all(name=self.hostname))
+            success = True
         if len(servers) < 1:
             raise EnvironmentError('Host '+self.hostname+' not found in hcloud api.')
         return servers[0]

@@ -6,20 +6,24 @@ import hetznercloud
 import unittest
 import mock
 
-class TestHostnameHostFinder(unittest.TestCase):
+class TestTestHostFinder(unittest.TestCase):
+    @mock.patch('os.environ')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_searches_for_passed_hostname(self, cloudClient):
-        finder = hcloud.HostnameHostFinder( 'server_1' )
+    def test_searches_for_environment_hostname(self, cloudClient, environ):
+        finder = hcloud.TestHostFinder()
+        environ.get = mock.Mock(return_value='test_server')
         cloudClient.servers = mock.Mock(return_value=cloudClient)
         cloudClient.get_all = mock.Mock(return_value=[ 'serverobject' ])
         server = finder.find(cloudClient);
         
-        cloudClient.get_all.assert_called_once_with(name='server_1')
+        cloudClient.get_all.assert_called_once_with(name='test_server')
         assert server == 'serverobject'
 
+    @mock.patch('os.environ')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_throws_on_empty_list(self, cloudClient):
-        finder = hcloud.HostnameHostFinder( 'server_1' )
+    def test_throws_on_empty_list(self, cloudClient, environ):
+        finder = hcloud.TestHostFinder()
+        environ.get = mock.Mock(return_value='test_server')
         cloudClient.servers = mock.Mock(return_value=cloudClient)
         cloudClient.get_all = mock.Mock(return_value=[])
         self.assertRaises(EnvironmentError, finder.find, cloudClient)
