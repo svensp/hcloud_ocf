@@ -28,7 +28,11 @@ import stonith
 # Match hostname to servername
 #
 #
-class IpHostFinder:
+class HostFinder:
+    def find(self, client) -> HetznerCloudServer:
+        pass
+
+class IpHostFinder(HostFinder):
     def __init__(self, ipApi = ifaddr):
         self.ipApi = ipApi
 
@@ -44,7 +48,7 @@ class IpHostFinder:
                 return server
         raise EnvironmentError('Host not found in hcloud api.')
 
-class HostnameHostFinder():
+class HostnameHostFinder(HostFinder):
     def __init__(self, hostname):
         self.hostname = hostname
 
@@ -57,7 +61,7 @@ class HostnameHostFinder():
             raise EnvironmentError('Host '+self.hostname+' not found in hcloud api.')
         return servers[0]
 
-class TestHostFinder():
+class TestHostFinder(HostFinder):
     def find(self, client) -> HetznerCloudServer:
         name = os.environ.get('TESTHOST')
         servers = client.servers().get_all(name=name)
@@ -65,7 +69,7 @@ class TestHostFinder():
             raise EnvironmentError('Host '+name+' not found in hcloud api.')
         return servers[0]
 
-def makeHostFinder(type):
+def makeHostFinder(type) -> HostFinder:
     if type == 'public-ip':
         return IpHostFinder()
     if type == 'hostname':
