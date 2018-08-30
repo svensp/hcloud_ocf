@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 #
 #   Resource Agent for managing hetzner cloud ips
 #
@@ -29,9 +29,12 @@ import stonith
 #
 #
 class IpHostFinder:
+    def __init__(self, ipApi = ifaddr):
+        self.ipApi = ipApi
+
     def find(self, client) -> HetznerCloudServer:
         my_ips = []
-        adapters = ifaddr.get_adapters()
+        adapters = self.ipApi.get_adapters()
         for adapter in adapters:
             for ip in adapter.ips:
                 my_ips.append(ip.ip)
@@ -44,13 +47,21 @@ class IpHostFinder:
 class HostnameHostFinder():
     def __init__(self, hostname):
         self.hostname = hostname
+        self.rateLimitWait = 10
+        self.serverErrorWait = 5
 
     def find(self, client) -> HetznerCloudServer:
         success = False
         while not success:
-            servers = list(client.servers().get_all(name=self.hostname))
+            try:
+                servers = list(client.servers().get_all(name=self.hostname))
+                success = True
+            except HetznerInternalServerErrorException:
+                time.sleep( self.serverErrorWait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
         if len(servers) < 1:
-            raise EnvironmentError('Host '+hostname+' not found in hcloud api.')
+            raise EnvironmentError('Host '+self.hostname+' not found in hcloud api.')
         return servers[0]
 
 class TestHostFinder():
@@ -61,7 +72,7 @@ class TestHostFinder():
             raise EnvironmentError('Host '+name+' not found in hcloud api.')
         return servers[0]
 
-def makeHostFinder(type) -> HetznerCloudServer:
+def makeHostFinder(type):
     if type == 'public-ip':
         return IpHostFinder()
     if type == 'hostname':
@@ -162,17 +173,18 @@ class FloatingIp(ocf.ResourceAgent):
                 time.sleep( self.rateLimitWait )
 
         success = False
-        while not success:
-            try:
-                ip = self.ipFinder.find( self.client )
-                ip.assign_to_server( server.id )
-                success = True
-            except HetznerActionException:
-                time.sleep( self.wait )
-            except HetznerInternalServerErrorException:
-                time.sleep( self.wait )
-            except HetznerRateLimitExceeded:
-                time.sleep( self.rateLimitWait )
+        try:
+            while not success:
+                try:
+                    ip = self.ipFinder.find( self.client )
+                    ip.assign_to_server( server.id )
+                    success = True
+                except HetznerActionException:
+                    time.sleep( self.wait )
+                except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except HetznerRateLimitExceeded:
+                    time.sleep( self.rateLimitWait )
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
