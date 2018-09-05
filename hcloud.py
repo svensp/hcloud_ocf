@@ -87,8 +87,8 @@ class IpFinder:
          raise EnvironmentError('Floating ip not found.')
 
 class FloatingIp(ocf.ResourceAgent):
-    def __init__(self):
-        self.ipFinder = IpFinder()
+    def __init__(self, ipFinder = IpFinder()):
+        self.ipFinder = ipFinder
 
         ocf.ResourceAgent.__init__(self, 'floating_ip', '0.1.0', 'Manage Hetzner Cloud Floating Ips',
                 '''
@@ -144,6 +144,8 @@ class FloatingIp(ocf.ResourceAgent):
                 self.sleep
         ]
         self.setHint('start', 'timeout', '10')
+        self.wait = 0
+        self.rateLimitWait = 0
 
     def getParameters(self):
         return self.parameters
@@ -157,23 +159,36 @@ class FloatingIp(ocf.ResourceAgent):
         self.rateLimitWait = int( self.sleep.get() ) * 5 
 
     def start(self):
-        success = False
         hostFinder = makeHostFinder( self.finderType.get() )
-        while not success:
-            try:
-                server = self.hostFinder.find( self.client )
-            except HetznerActionException:
-                time.sleep( self.wait )
-            except HetznerInternalServerErrorException:
-                time.sleep( self.wait )
-            except HetznerRateLimitExceeded:
-                time.sleep( self.rateLimitWait )
-
-        success = False
         try:
+            success = False
             while not success:
                 try:
-                    ip = self.ipFinder.find( self.client )
+                    server = hostFinder.find( self.client )
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except HetznerRateLimitExceeded:
+                    time.sleep( self.rateLimitWait )
+                except EnvironmentError: 
+                    # Host not found in api
+                    return ocf.ReturnCodes.isMissconfigured
+
+            success = False
+            while not success:
+                try:
+                    ip = self.ipFinder.find( self.client, self.floatingIp.get() )
+                    success = True
+                except HetznerActionException:
+                    time.sleep( self.wait )
+                except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except HetznerRateLimitExceeded:
+                    time.sleep( self.rateLimitWait )
+
+            success = False
+            while not success:
+                try:
                     ip.assign_to_server( server.id )
                     success = True
                 except HetznerActionException:
@@ -185,6 +200,7 @@ class FloatingIp(ocf.ResourceAgent):
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
+        return ocf.ReturnCodes.success
 
     def stop(self):
         return ocf.ReturnCodes.success
@@ -197,18 +213,22 @@ class FloatingIp(ocf.ResourceAgent):
             success = False
             while not success:
                 try:
-                    server = self.hostFinder.find( self.client )
+                    server = hostFinder.find( self.client )
+                    success = True
                 except HetznerActionException:
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
                     time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
+                except EnvironmentError: 
+                    # Host not found in api
+                    return ocf.ReturnCodes.isMissconfigured
 
             success = False
             while not success:
                 try:
-                    ip = self.ipFinder.find( self.client )
+                    ip = self.ipFinder.find( self.client, self.floatingIp.get() )
                     if ip.server == server.id:
                         isActive = True
                     success = True
@@ -221,7 +241,11 @@ class FloatingIp(ocf.ResourceAgent):
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
-        return isActive
+
+        if not isActive:
+            return ocf.ReturnCodes.isNotRunning
+            
+        return ocf.ReturnCodes.success
 
 class Stonith():
     def __init__(self):

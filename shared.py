@@ -60,6 +60,7 @@ class Parameter:
         self.unique = unique
         self.required = required
         self.type = type
+        self.value = False
 
     def set(self, value):
         self.value = value
