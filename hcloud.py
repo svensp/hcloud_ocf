@@ -259,15 +259,15 @@ class FloatingIp(ocf.ResourceAgent):
         return ocf.ReturnCodes.success
 
 class FindHostException(Exception):
-    __init__(self, code):
+    def __init__(self, code):
         self.code = code
 
 class Stonith():
     def __init__(self):
-        self.sleep = ocf.Parameter('sleep', default="2", shortDescription='Time in seconds to sleep on failed api requests' ,
+        self.sleep = ocf.Parameter('sleep', default="5", shortDescription='Time in seconds to sleep on failed api requests' ,
                 description='''
                 If a request to the hetzner api fails then the device will retry the request after the number of
-                seconds specified here, or 1 second by default.
+                seconds specified here, or 5 second by default.
 
                 Exceptions to this are:
                 Requests which failed due to the rate limit will sleep for 5 times the time set here
