@@ -7,11 +7,11 @@
 
 import sys
 import ocf
-import hcloud
+import floating_ip
 
 if __name__ == '__main__':
     application = ocf.AgentRunner()
-    resourceAgent = hcloud.FloatingIp()
+    resourceAgent = floating_ip.FloatingIp()
     api = ocf.Api()
 
     try:

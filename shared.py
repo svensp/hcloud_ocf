@@ -1,6 +1,11 @@
-from lxml import etree as ET
+import ifaddr
 import socket
+import os
+from hetznercloud.servers import HetznerCloudServer
 
+#
+# Validators
+#
 class Ipv4Validator:
     def __init__(self, parameter):
         self.parameter = parameter
@@ -23,116 +28,67 @@ class StringLengthValidator:
         raise EnvironmentError(0, "Parameter "+self.parameter.name+" does not have the length of a hetzner cloud token("+str(self.length)+" characters)")
             
 
-class ParameterXmlBuilder:
-    def build(self, parametersNode, parameters):
-        for parameter in parameters:
-            parameterNode = ET.SubElement(parametersNode, 'parameter')
-            parameterNode.set('name', parameter.getName())
-            content = ET.SubElement(parameterNode, 'content')
-            content.set('type', parameter.getType())
 
-            longDesc = ET.SubElement(parameterNode, 'longdesc')
-            longDesc.text = parameter.getDescription()
-            longDesc.set('lang', 'en')
-            shortDesc = ET.SubElement(parameterNode, 'shortdesc')
-            shortDesc.text = parameter.getShortDescription()
-            shortDesc.set('lang', 'en')
+#
+# The HostFinder searches for the hetzner cloud api server which manages the
+# machine this script is running on
+#
+# Implementation:
+#   An api server is matched if the ipv4 address listed in the api is present
+#   on this machine
+#  
+# Possible alternatives:
+# Match hostname to servername
+#
+#
+class HostFinder:
+    def find(self, client) -> HetznerCloudServer:
+        pass
 
-            parameterNode.set('unique', '0')
-            if parameter.isUnique():
-                parameterNode.set('unique', '1')
+class IpHostFinder(HostFinder):
+    def __init__(self, ipApi = ifaddr):
+        self.ipApi = ipApi
 
-            parameterNode.set('required', '0')
-            if parameter.isRequired():
-                parameterNode.set('required', '1')
+    def find(self, client) -> HetznerCloudServer:
+        my_ips = []
+        adapters = self.ipApi.get_adapters()
+        for adapter in adapters:
+            for ip in adapter.ips:
+                my_ips.append(ip.ip)
+        servers = client.servers().get_all()
+        for server in servers:
+            if server.public_net_ipv4 in  my_ips:
+                return server
+        raise EnvironmentError('Host not found in hcloud api.')
 
-class Populater:
-    def __init__(self, api):
-        self.api = api
+class HostnameHostFinder(HostFinder):
+    def __init__(self, hostname):
+        self.hostname = hostname
 
-    def populate(self, resource, validate = True):
-        for parameter in resource.getParameters():
-            value = self.api.variable( parameter.getName() )
-            if validate and parameter.isRequired():
-                try:
-                    assert not value == None
-                    assert not value == ''
-                except AssertionError:
-                    print( "Error: Missing parameter "+parameter.getName() )
-                    raise
-            if not value:
-                value = parameter.getDefault()
+    def find(self, client) -> HetznerCloudServer:
+        success = False
+        while not success:
+            servers = list(client.servers().get_all(name=self.hostname))
+            success = True
+        if len(servers) < 1:
+            raise EnvironmentError('Host '+self.hostname+' not found in hcloud api.')
+        return servers[0]
 
-            parameter.set(value)
-        try:
-            resource.setHost( self.api.host() )
-        except AttributeError:
-            pass
+class TestHostFinder(HostFinder):
+    def find(self, client) -> HetznerCloudServer:
+        name = os.environ.get('TESTHOST')
+        servers = client.servers().get_all(name=name)
+        if len(servers) < 1:
+            raise EnvironmentError('Host '+name+' not found in hcloud api.')
+        return servers[0]
 
-        try:
-            resource.populated()
-        except AttributeError:
-            pass
+def makeHostFinder(type) -> HostFinder:
+    if type == 'public-ip':
+        return IpHostFinder()
+    if type == 'hostname':
+        hostname = socket.gethostname()
+        return HostnameHostFinder(hostname)
+    if type == 'test':
+        return TestHostFinder()
+    raise KeyError('Unkown host finder type')
 
-class Parameter:
-    def __init__(self, name, shortDescription='', description='', default='', type='string', unique=False, required=False):
-        self.name = name
-        self.default = default
-        self.shortDescription = shortDescription
-        self.description = description
-        self.unique = unique
-        self.required = required
-        self.type = type
-        self.value = False
-        self.validate = lambda : True
-
-    def set(self, value):
-        self.value = value
-    def get(self):
-        return self.value
-    def getName(self):
-        return self.name
-    def getDefault(self):
-        return self.default
-    def isRequired(self):
-        return self.required
-    def isUnique(self):
-        return self.unique
-    def getShortDescription(self):
-        return self.shortDescription
-    def getDescription(self):
-        return self.description
-    def getType(self):
-        return self.type
-
-class ResourceAgent:
-    def __init__(self, name, version, shortDescription, description):
-        self.name = name
-        self.version = version
-        self.shortDescription = shortDescription
-        self.description = description
-        self.hints = {}
-
-    def getName(self):
-        return self.name
-    def getVersion(self):
-        return self.version
-    def getShortDescription(self):
-        return self.shortDescription
-    def getDescription(self):
-        return self.description
-    def setHint(self, action, hint, value):
-        try:
-            self.hints[action].update({hint: value})
-        except KeyError:
-            self.hints[action] = {hint: value}
-    def setHints(self, action, hints):
-        try:
-            self.hints[action].update(hints)
-        except KeyError:
-            self.hints[action] = hints
-    def getHints(self, action):
-        try:
-            return self.hints[action]
-        except KeyError:
-            return {}

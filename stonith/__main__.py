@@ -7,11 +7,11 @@
 
 import sys
 import stonith
-import hcloud
+import stonith_agent
 
 if __name__ == '__main__':
     application = stonith.Runner()
-    resourceAgent = hcloud.Stonith()
+    resourceAgent = stonith_agent.Stonith()
     api = stonith.Api()
 
     try:
