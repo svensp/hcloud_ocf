@@ -107,7 +107,7 @@ class FloatingIp(ocf.ResourceAgent):
                 order start ip address after floating ip
                 ''')
 
-        self.floatingIp = ocf.Parameter('floating_ip', shortDescription='Hetner Cloud Ip-Address x.x.x.x' ,
+        self.floatingIp = ocf.Parameter('ip', shortDescription='Hetner Cloud Ip-Address x.x.x.x' ,
                 description='''
                 The Hetzner Cloud Floating Ip Address which this resource should manage.
                 Note that this does not mean the Id of the Ip-Address but the Address
@@ -191,6 +191,11 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
+
+            # Ip already assigned, no action required
+            if ip.server == server.id:
+                return ocf.ReturnCodes.success
+                
 
             success = False
             while not success:
