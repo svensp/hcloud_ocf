@@ -258,6 +258,10 @@ class FloatingIp(ocf.ResourceAgent):
             
         return ocf.ReturnCodes.success
 
+class FindHostException(Exception):
+    __init__(self, code):
+        self.code = code
+
 class Stonith():
     def __init__(self):
         self.sleep = ocf.Parameter('sleep', default="2", shortDescription='Time in seconds to sleep on failed api requests' ,
@@ -364,23 +368,94 @@ class Stonith():
         return stonith.ReturnCodes.success
 
     def powerOn(self):
-        host = self.hostFinder.find(self.client)
-        host.power_on()
+        try: 
+            host = self.findServer()
+        except FindHostException as e:
+            return e.code
 
-    def powerOff(self):
-        host = self.hostFinder.find(self.client)
-        host.power_off()
-
-    def powerReset(self):
-        host = self.hostFinder.find(self.client)
-        host.reset()
-
-    def status(self):
         try:
             success = False
             while not success:
                 try:
-                    list( self.client.servers().get_all() )
+                    host.power_on()
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep(self.wait)
+                except HetznerRateLimitExceeded:
+                    time.sleep(self.rateLimitWait)
+                except HetznerActionException:
+                    time.sleep(self.wait)
+
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return stonith.ReturnCodes.isMissconfigured
+
+        return stonith.ReturnCodes.success
+
+    def powerOff(self):
+        try: 
+            host = self.findServer()
+        except FindHostException as e:
+            return e.code
+
+        try:
+            success = False
+            while not success:
+                try:
+                    host.power_off()
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep(self.wait)
+                except HetznerRateLimitExceeded:
+                    time.sleep(self.rateLimitWait)
+                except HetznerActionException:
+                    time.sleep(self.wait)
+
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return stonith.ReturnCodes.isMissconfigured
+
+        return stonith.ReturnCodes.success
+
+    def powerReset(self):
+        try: 
+            host = self.findServer()
+        except FindHostException as e:
+            return e.code
+
+        try:
+            success = False
+            while not success:
+                try:
+                    host.reset()
+                    success = True
+                except HetznerInternalServerErrorException:
+                    time.sleep(self.wait)
+                except HetznerActionException:
+                    time.sleep(self.wait)
+                except HetznerRateLimitExceeded:
+                    time.sleep(self.rateLimitWait)
+
+        except HetznerAuthenticationException:
+            print('Error: Cloud Api returned Authentication error. Token deleted?')
+            return stonith.ReturnCodes.isMissconfigured
+
+        return stonith.ReturnCodes.success
+
+    def status(self):
+        try: 
+            host = self.findServer()
+        except FindHostException as e:
+            return e.code
+        return stonith.ReturnCodes.success
+
+    
+    def findServer(self):
+        try:
+            success = False
+            while not success:
+                try:
+                    host = self.hostFinder.find(self.client)
                     success = True
                 except HetznerInternalServerErrorException:
                     time.sleep(self.wait)
@@ -389,8 +464,9 @@ class Stonith():
 
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
-            return stonith.ReturnCodes.isMissconfigured
-        return stonith.ReturnCodes.success
+            raise FindHostException(stonith.ReturnCodes.isMissconfigured)
+
+        return host
 
     def infoId(self):
         print ("hetzner_cloud")
