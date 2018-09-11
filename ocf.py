@@ -71,7 +71,7 @@ class AgentRunner:
         longdesc.set('lang', 'en')
             
         parametersNode = ET.SubElement(root, 'parameters')
-        self.parameterBuilder.build(parametersNode, parameter)
+        self.parameterBuilder.build(parametersNode, resource.parameters)
 
         actions = ['start', 'stop', 'monitor', 'meta-data', 'validate-all'
                 'reload', 'migrate_to', 'migrate_from', 'promote', 'demote']
@@ -91,13 +91,17 @@ class AgentRunner:
         print( ET.tostring(tree, encoding="UTF-8",
                      xml_declaration=True,
                      pretty_print=True,
-                     doctype='<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">'))
+                     doctype='<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">').decode('UTF-8'))
 
     def validate(self, resource):
         self.populater.populate(resource)
 
-        for item in resource.getParameters():
-            item.validate()
+        try:
+            for item in resource.getParameters():
+                item.validate()
+        except EnvironmentError as e:
+            print( e.strerror )
+            return ReturnCodes.isMissconfigured
             
         try:
             resource.validate()
@@ -107,7 +111,8 @@ class AgentRunner:
         return 0 
 
     def run(self, resource, action):
-        self.populater.populate(resource)
+        validate = ( action != 'meta-data' )
+        self.populater.populate(resource, validate)
 
         actions = self.actionBuilder.build(self, resource)
 

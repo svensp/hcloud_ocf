@@ -15,6 +15,7 @@ import ifaddr
 import os
 import time
 import stonith
+import shared
 
 #
 # The HostFinder searches for the hetzner cloud api server which manages the
@@ -94,10 +95,11 @@ class FloatingIp(ocf.ResourceAgent):
                 '''
                 This resource agent uses the hetzner cloud api and to manage a floating ip address.
 
-                IMPORTANT: This resource agent assumes that the hostname of the target cluster member
-                is the same as its name in the cloud api.
+                By default matching the host to a server entry in the api is done by matching its
+                default ipv4 address to those listed in the api servers.
+                This can be chaned using the host_finder parameter
 
-                It does NOT manage adding the ip address to the network interface. You should either
+                This resource does NOT manage adding the ip address to the network interface. You should either
                 add it permanently to your network adapter by setting it in /etc/network/interfaces,
                 /etc/netplan/* or in NetworkManager OR you could use a second resource of type IPAddr2
                 with the address and set at least two constraints:
@@ -112,6 +114,7 @@ class FloatingIp(ocf.ResourceAgent):
                 itself.
                 ''',
                 required=True, unique=True)
+        self.floatingIp.validate = shared.Ipv4Validator(self.floatingIp)
         self.apiToken = ocf.Parameter('api_token', shortDescription='Hetner Cloud api token' ,
                 description='''
                 The Hetzner Cloud api token with which the ip address can be managed.
@@ -121,6 +124,7 @@ class FloatingIp(ocf.ResourceAgent):
                 Activate the second tab `Api Tokens` and create a new token.
                 ''',
                 required=True, unique=False)
+        self.apiToken.validate = shared.StringLengthValidator(self.apiToken, 64)
         self.finderType = ocf.Parameter('host_finder', default='public-ip', shortDescription='Host finder' ,
                 description='''
                 Implementation to use for matching the host this agent is running on to the host in the api
@@ -128,13 +132,14 @@ class FloatingIp(ocf.ResourceAgent):
                 Available implementations:
                 - public-ip: The public ipv4 address listed in the api is present on any adapter on the host
                 - hostname: The hosts `hostname` matches the server name in the api
-                - test: 
                 ''',
                 required=False, unique=False)
-        self.sleep = ocf.Parameter('sleep', default='2', shortDescription='Sleep duration when an api request fails' ,
+        self.sleep = ocf.Parameter('sleep', default='5', shortDescription='Sleep duration when an api request fails' ,
                 description='''
-                The number of seconds to wait before trying again when an api request fails from something other than
-                a insufficient permissions
+                The number of seconds to wait when encountering a problem with the api.
+
+                This happens mainly when the api is unreachable or returns internal server errors.
+                Rate limit errors will wait for double the set time but at least 10 seconds.
                 ''',
                 required=False, unique=False)
         self.parameters = [
@@ -143,7 +148,8 @@ class FloatingIp(ocf.ResourceAgent):
                 self.finderType,
                 self.sleep
         ]
-        self.setHint('start', 'timeout', '10')
+        self.setHint('start', 'timeout', '60')
+        self.setHint('monitor', 'timeout', '60')
         self.wait = 0
         self.rateLimitWait = 0
 
@@ -156,7 +162,7 @@ class FloatingIp(ocf.ResourceAgent):
         configuration = HetznerCloudClientConfiguration().with_api_key( self.apiToken.get() ).with_api_version(1)
         self.client = HetznerCloudClient(configuration)
         self.wait = int( self.sleep.get() )
-        self.rateLimitWait = int( self.sleep.get() ) * 5 
+        self.rateLimitWait = max( int( self.sleep.get() ) * 2, 10 )
 
     def start(self):
         hostFinder = makeHostFinder( self.finderType.get() )

@@ -1,4 +1,27 @@
 from lxml import etree as ET
+import socket
+
+class Ipv4Validator:
+    def __init__(self, parameter):
+        self.parameter = parameter
+
+    def __call__(self):
+        try:
+            socket.inet_aton( self.parameter.get() )
+        except socket.error:
+            raise EnvironmentError(0, "Parameter "+self.parameter.name+" is not a valid ipv4 address")
+
+class StringLengthValidator:
+    def __init__(self, parameter, length):
+        self.parameter = parameter
+        self.length = length
+
+    def __call__(self):
+        if len( self.parameter.get() ) == self.length:
+            return
+
+        raise EnvironmentError(0, "Parameter "+self.parameter.name+" does not have the length of a hetzner cloud token("+str(self.length)+" characters)")
+            
 
 class ParameterXmlBuilder:
     def build(self, parametersNode, parameters):
@@ -61,6 +84,7 @@ class Parameter:
         self.required = required
         self.type = type
         self.value = False
+        self.validate = lambda : True
 
     def set(self, value):
         self.value = value
