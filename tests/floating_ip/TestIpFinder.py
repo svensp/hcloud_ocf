@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 sys.path.append( '../..')
-from floating_ip import hcloud 
+import shared
 import hetznercloud
 import unittest
 import mock
@@ -19,7 +19,7 @@ class TestIpFinder(unittest.TestCase):
             expectedIp
         ])
 
-        ipFinder = hcloud.IpFinder();
+        ipFinder = shared.IpFinder();
         ip = ipFinder.find(cloudClient, '127.0.0.1')
         assert ip.ip == '127.0.0.1'
 
@@ -28,7 +28,7 @@ class TestIpFinder(unittest.TestCase):
         cloudClient.floating_ips = mock.Mock(return_value=cloudClient)
         cloudClient.get_all = mock.Mock(return_value=[ ])
 
-        ipFinder = hcloud.IpFinder();
+        ipFinder = shared.IpFinder();
         self.assertRaises(EnvironmentError, ipFinder.find, cloudClient, '127.0.0.1')
 
     @mock.patch('hetznercloud.floating_ips.HetznerCloudFloatingIp')
@@ -44,7 +44,7 @@ class TestIpFinder(unittest.TestCase):
             wrongIp2
         ])
 
-        ipFinder = hcloud.IpFinder();
+        ipFinder = shared.IpFinder();
         self.assertRaises(EnvironmentError, ipFinder.find, cloudClient, '127.0.0.1')
 
 if __name__ == '__main__':

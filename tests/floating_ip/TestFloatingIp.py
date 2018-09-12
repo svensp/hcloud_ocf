@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 import sys
-sys.path.append( '../..')
-from floating_ip import hcloud 
-from floating_ip import ocf
+sys.path.append( '../../floating_ip')
+import floating_ip
+import shared
+import ocf
 import hetznercloud
 import time
 import unittest
@@ -27,13 +28,13 @@ class TestFloatingIp(unittest.TestCase):
         # mock HostFinder to return a generic server object
         server = hetznercloud.servers.HetznerCloudServer([])
         server.id = 51
-        hostFinder = hcloud.HostFinder()
+        hostFinder = shared.HostFinder()
         hostFinder.find = mock.Mock(return_value=server)
         makeHostFinder.return_value = hostFinder
 
         # mock IpFinder to return a generic floating ip object
         ip = hetznercloud.floating_ips.HetznerCloudFloatingIp([])
-        floatingIp = hcloud.FloatingIp()
+        floatingIp = floating_ip.FloatingIp()
         floatingIp.client = client
         floatingIp.ipFinder.find = mock.Mock(return_value=ip)
 
@@ -41,7 +42,7 @@ class TestFloatingIp(unittest.TestCase):
         ip.assign_to_server = mock.Mock()
         return [server, hostFinder, ip, floatingIp]
 
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_returns_success(self, client, makeHostFinder):
 
@@ -49,7 +50,7 @@ class TestFloatingIp(unittest.TestCase):
 
         assert floatingIp.start() is ocf.ReturnCodes.success
 
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_assigns_ip(self, client, makeHostFinder):
 
@@ -59,7 +60,7 @@ class TestFloatingIp(unittest.TestCase):
         ip.assign_to_server.assert_called_once_with( server.id )
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_returns_missconfigured_on_not_found(self, client, makeHostFinder, sleep):
 
@@ -69,7 +70,7 @@ class TestFloatingIp(unittest.TestCase):
         assert floatingIp.start() is ocf.ReturnCodes.isMissconfigured
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_host_server_error(self, client, makeHostFinder, sleep):
 
@@ -82,7 +83,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_ip_server_error(self, client, makeHostFinder, sleep):
 
@@ -95,7 +96,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_assign_server_error(self, client, makeHostFinder, sleep):
 
@@ -108,7 +109,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_host_ratelimit_error(self, client, makeHostFinder, sleep):
 
@@ -121,7 +122,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_ip_ratemlimit_error(self, client, makeHostFinder, sleep):
 
@@ -134,7 +135,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
         
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_assign_ratemlimit_error(self, client, makeHostFinder, sleep):
 
@@ -147,11 +148,11 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     def test_stop_returns_success(self):
-        floatingIp = hcloud.FloatingIp()
+        floatingIp = floating_ip.FloatingIp()
         assert floatingIp.stop() is ocf.ReturnCodes.success
         
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_start_retries_on_assign_action_error(self, client, makeHostFinder, sleep):
 
@@ -164,7 +165,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_returns_success_if_assigned_to_server(self, client, makeHostFinder, sleep):
 
@@ -174,7 +175,7 @@ class TestFloatingIp(unittest.TestCase):
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_returns_not_running_if_not_assigned_to_server(self, client, makeHostFinder, sleep):
 
@@ -185,7 +186,7 @@ class TestFloatingIp(unittest.TestCase):
 
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_retries_on_server_rate_error(self, client, makeHostFinder, sleep):
 
@@ -197,7 +198,7 @@ class TestFloatingIp(unittest.TestCase):
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_retries_on_server_server_error(self, client, makeHostFinder, sleep):
 
@@ -209,7 +210,7 @@ class TestFloatingIp(unittest.TestCase):
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_retries_on_ip_rate_error(self, client, makeHostFinder, sleep):
 
@@ -222,7 +223,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_retries_on_ip_server_error(self, client, makeHostFinder, sleep):
 
@@ -235,7 +236,7 @@ class TestFloatingIp(unittest.TestCase):
         sleep.assert_called_once()
 
     @mock.patch('time.sleep')
-    @mock.patch('floating_ip.hcloud.makeHostFinder')
+    @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_returns_missconfigured_on_not_found(self, client, makeHostFinder, sleep):
 
@@ -246,7 +247,7 @@ class TestFloatingIp(unittest.TestCase):
         assert floatingIp.monitor() is ocf.ReturnCodes.isMissconfigured
 
     def test_stop_returns_success(self):
-        floatingIp = hcloud.FloatingIp()
+        floatingIp = floating_ip.FloatingIp()
         assert floatingIp.stop() is ocf.ReturnCodes.success
 
 if __name__ == '__main__':

@@ -46,12 +46,9 @@ class HostFinder:
         pass
 
 class IpHostFinder(HostFinder):
-    def __init__(self, ipApi = ifaddr):
-        self.ipApi = ipApi
-
     def find(self, client) -> HetznerCloudServer:
         my_ips = []
-        adapters = self.ipApi.get_adapters()
+        adapters = ifaddr.get_adapters()
         for adapter in adapters:
             for ip in adapter.ips:
                 my_ips.append(ip.ip)

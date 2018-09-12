@@ -1,60 +1,85 @@
 #!/usr/bin/python3
 import sys
 sys.path.append( '../..')
-from floating_ip import hcloud 
-from unittest.mock import patch
+import shared
+import unittest
+import ifaddr
+from unittest import mock
+from mock import patch
+from mock import Mock
 
 #
 # Test Definitions Begin
 #
 class TestIpHostFinder(unittest.TestCase):
 
-    def test_find_server1(self):
-        ifAddr = ifaddr
-        ifAddr.get_adapter = Mock(return=[
-            Mock().ips = [ Mock().ip = '192.168.2.1' ]
-        ])
-        ipHostFinder = hcloud.IpHostFinder( IfAddr([
-            '192.168.2.1'
-        ]) )
+    def makeAdapter(self, get_adapters, ip):
+        mockIp = Mock()
+        mockIp.ip = ip
+        mockAdapter = Mock()
+        mockAdapter.ips = [ mockIp ]
+        mockAdapters = [ mockAdapter ]
+        get_adapters.return_value = mockAdapters
+    
 
-#
-# Init test objects
-#
+    def makeServers(self, server_ips):
+        servers = []
+        index = 0
+        for ip in server_ips:
+            server = Mock()
+            server.index = index
+            server.public_net_ipv4 = ip
+            servers.append(server)
+            index += 1
+            
+        return servers
 
-ipHostFinder = hcloud.IpHostFinder( IfAddr([
-    '192.168.2.1'
-]) )
 
-#
-# Init test objects end
-#
+    @mock.patch('ifaddr.get_adapters')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_find_first(self, client, get_adapters):
+        self.makeAdapter(get_adapters, '192.168.2.1')
+        servers = self.makeServers(['192.168.2.1', '192.168.2.5'])
+        client.servers = Mock(return_value=client)
+        client.get_all = Mock(return_value=servers)
+        ipHostFinder = shared.IpHostFinder( )
+        server = ipHostFinder.find(client)
+        assert server.public_net_ipv4 == '192.168.2.1'
+        assert server.index == 0
 
-#
-# Tests
-#
-print("find server_1")
-server = ipHostFinder.find( PseudoClient([
-    '192.168.2.1',
-    '', 
-]) )
-assert server.name == 'server_1'
+    @mock.patch('ifaddr.get_adapters')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_find_middle(self, client, get_adapters):
+        self.makeAdapter(get_adapters, '192.168.2.1')
+        servers = self.makeServers(['192.168.2.5', '192.168.2.1', '192.168.2.4'])
+        client.servers = Mock(return_value=client)
+        client.get_all = Mock(return_value=servers)
+        ipHostFinder = shared.IpHostFinder( )
+        server = ipHostFinder.find(client)
+        assert server.public_net_ipv4 == '192.168.2.1'
+        assert server.index == 1
 
-print("find server_2")
-server = ipHostFinder.find( PseudoClient([
-    '', 
-    '192.168.2.1',
-]) )
-assert server.name == 'server_2'
+    @mock.patch('ifaddr.get_adapters')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_find_last(self, client, get_adapters):
+        self.makeAdapter(get_adapters, '192.168.2.1')
+        servers = self.makeServers(['192.168.2.5', '192.168.2.4', '192.168.2.1'])
+        client.servers = Mock(return_value=client)
+        client.get_all = Mock(return_value=servers)
+        ipHostFinder = shared.IpHostFinder( )
+        server = ipHostFinder.find(client)
+        assert server.public_net_ipv4 == '192.168.2.1'
+        assert server.index == 2
 
-print("find not found")
-try:
-    server = ipHostFinder.find( PseudoClient([
-    ]) )
-except EnvironmentError:
-    environmentErrorCought = True
-    pass
-assert environmentErrorCought
+    @mock.patch('ifaddr.get_adapters')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_find_not_found(self, client, get_adapters):
+        self.makeAdapter(get_adapters, '192.168.2.1')
+        servers = self.makeServers(['192.168.2.5', '192.168.2.6'])
+        client.servers = Mock(return_value=client)
+        client.get_all = Mock(return_value=servers)
+        ipHostFinder = shared.IpHostFinder( )
+        self.assertRaises(EnvironmentError, ipHostFinder.find, client)
 
 if __name__ == '__main__':
     unittest.main()
