@@ -8,7 +8,7 @@
 import os
 import sys
 from lxml import etree as ET
-from framework_shared import Populater, Parameter, ResourceAgent, ParameterXmlBuilder
+from common import Populater, Parameter, ResourceAgent, ParameterXmlBuilder
 
 class ReturnCodes:
     success = 0

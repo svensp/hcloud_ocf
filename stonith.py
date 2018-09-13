@@ -8,7 +8,7 @@
 from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient
 from hetznercloud.servers import HetznerCloudServer
 from lxml import etree as ET
-from framework_shared import Populater, Parameter, ParameterXmlBuilder
+from common import Populater, Parameter, ParameterXmlBuilder
 import sys
 import os
 
