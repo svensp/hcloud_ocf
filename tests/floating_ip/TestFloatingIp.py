@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys
-sys.path.append( '../../floating_ip')
+import os
+sys.path.append( os.path.dirname( os.path.realpath(__file__) ) + '/../../floating_ip' )
 import floating_ip
 import shared
 import ocf
@@ -8,19 +9,6 @@ import hetznercloud
 import time
 import unittest
 import mock
-
-class ExceptionTimes:
-    def __init__(self, exception, return_value=False, times = 1):
-        self.called = 0
-        self.exception = exception
-        self.times = times
-        self.return_value = return_value
-
-    def run(self, *args, **kwargs):
-        if self.times <= self.called:
-            return self.return_value
-        self.called += 1
-        raise self.exception
 
 class TestFloatingIp(unittest.TestCase):
 
@@ -75,8 +63,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_host_server_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerInternalServerErrorException(''), server)
-        hostFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        hostFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), server])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -88,8 +75,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_ip_server_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerInternalServerErrorException(''), ip)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -101,8 +87,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_assign_server_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerInternalServerErrorException(''), ip)
-        ip.assign_to_server = mock.Mock(side_effect=exceptionTimes.run)
+        ip.assign_to_server = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_with( server.id )
@@ -114,8 +99,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_host_ratelimit_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerRateLimitExceeded(''), ip)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -127,8 +111,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_ip_ratemlimit_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerRateLimitExceeded(''), ip)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -140,8 +123,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_assign_ratemlimit_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerRateLimitExceeded(''), ip)
-        ip.assign_to_server = mock.Mock(side_effect=exceptionTimes.run)
+        ip.assign_to_server = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_with( server.id )
@@ -157,8 +139,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_assign_action_error(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerActionException(''), ip)
-        ip.assign_to_server = mock.Mock(side_effect=exceptionTimes.run)
+        ip.assign_to_server = mock.Mock(side_effect=[hetznercloud.HetznerActionException(''), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_with( server.id )
@@ -192,8 +173,7 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerRateLimitExceeded(''), server)
-        hostFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        hostFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), server])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
@@ -204,8 +184,7 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerInternalServerErrorException(''), server)
-        hostFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        hostFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), server])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
@@ -216,8 +195,7 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerRateLimitExceeded(''), ip)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), ip])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
         sleep.assert_called_once()
@@ -229,8 +207,7 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
-        exceptionTimes = ExceptionTimes(hetznercloud.HetznerInternalServerErrorException(''), ip)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=exceptionTimes.run)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), ip])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
         sleep.assert_called_once()

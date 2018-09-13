@@ -58,6 +58,8 @@ class Stonith():
                 -> hostnames can be mapped to server names in the api
                 ''',
                 required=False, unique=False)
+        self.wait = 5
+        self.rateLimitWait = 5
 
         self.parameters = [
                 self.apiToken,
@@ -79,7 +81,6 @@ class Stonith():
             raise KeyError
             return
         self.hostFinder = shared.HostnameHostFinder(host)
-            
 
     def populated(self):
         if not self.apiToken.get():
