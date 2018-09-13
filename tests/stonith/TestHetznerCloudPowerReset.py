@@ -8,11 +8,10 @@ import Base
 class TestHetznerCloud(Base.TestBase, unittest.TestCase):
 
     def takeAction(self, agent):
-        return agent.powerOn()
+        return agent.powerReset()
 
     def serverAction(self, server):
-        return server.power_on
-
+        return server.reset
 
 if __name__ == '__main__':
     unittest.main()

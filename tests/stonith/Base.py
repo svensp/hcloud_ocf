@@ -18,6 +18,10 @@ class TestBase(abc.ABC):
     def takeAction(self, agent):
         pass
 
+    @abc.abstractmethod
+    def serverAction(self, server):
+        pass
+
     def makeBase(self, client, hostFinder):
         server = hetznercloud.servers.HetznerCloudServer([])
         server.id = 51
@@ -31,15 +35,15 @@ class TestBase(abc.ABC):
 
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_called(self, client, hostFinder):
+    def test_action_called(self, client, hostFinder):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         self.takeAction(agent)
-        server.power_on.assert_called_once()
+        self.serverAction(server).assert_called_once()
 
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_returns_success(self, client, hostFinder):
+    def test_action_returns_success(self, client, hostFinder):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         returnCode = self.takeAction(agent)
@@ -48,42 +52,42 @@ class TestBase(abc.ABC):
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_repeatet_after_wait_on_host_find_server_error(self, client, hostFinder, sleep):
+    def test_action_is_repeatet_after_wait_on_host_find_server_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         hostFinder.find = Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException('502'), server])
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert hostFinder.find.call_count == 2
-        server.power_on.assert_called_once()
+        self.serverAction(server).assert_called_once()
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_repeatet_after_wait_on_host_find_rate_limit_error(self, client, hostFinder, sleep):
+    def test_action_is_repeatet_after_wait_on_host_find_rate_limit_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         hostFinder.find.side_effect = [hetznercloud.HetznerRateLimitExceeded('502'), server]
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert hostFinder.find.call_count == 2
-        server.power_on.assert_called_once()
+        self.serverAction(server).assert_called_once()
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_canceled_after_host_find_authentication_exception(self, client, hostFinder, sleep):
+    def test_action_is_canceled_after_host_find_authentication_exception(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         hostFinder.find.side_effect = [hetznercloud.HetznerAuthenticationException(), server]
         self.takeAction(agent)
         assert hostFinder.find.call_count == 1
-        assert server.power_on.call_count == 0
+        assert self.serverAction(server).call_count == 0
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_returns_missconfigured_after_host_find_authentication_exception(self, client, hostFinder, sleep):
+    def test_action_returns_missconfigured_after_host_find_authentication_exception(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         hostFinder.find.side_effect = [hetznercloud.HetznerAuthenticationException(), server]
@@ -93,52 +97,52 @@ class TestBase(abc.ABC):
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_repeatet_after_wait_on_power_on_server_error(self, client, hostFinder, sleep):
+    def test_action_is_repeatet_after_wait_on_action_server_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        server.power_on.side_effect = [hetznercloud.HetznerInternalServerErrorException('502'), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerInternalServerErrorException('502'), server]
         self.takeAction(agent)
         assert sleep.call_count == 1
-        assert server.power_on.call_count == 2
+        assert self.serverAction(server).call_count == 2
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_repeatet_after_wait_on_power_on_rate_limit_error(self, client, hostFinder, sleep):
+    def test_action_is_repeatet_after_wait_on_action_rate_limit_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        server.power_on.side_effect = [hetznercloud.HetznerRateLimitExceeded('502'), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerRateLimitExceeded('502'), server]
         self.takeAction(agent)
         assert sleep.call_count == 1
-        assert server.power_on.call_count == 2
+        assert self.serverAction(server).call_count == 2
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_repeatet_after_wait_on_power_on_action_error(self, client, hostFinder, sleep):
+    def test_action_is_repeatet_after_wait_on_action_action_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        server.power_on.side_effect = [hetznercloud.HetznerActionException('502'), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerActionException('502'), server]
         self.takeAction(agent)
         assert sleep.call_count == 1
-        assert server.power_on.call_count == 2
+        assert self.serverAction(server).call_count == 2
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_is_canceled_after_power_on_authentication_exception(self, client, hostFinder, sleep):
+    def test_action_is_canceled_after_action_authentication_exception(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        server.power_on.side_effect = [hetznercloud.HetznerAuthenticationException(), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerAuthenticationException(), server]
         self.takeAction(agent)
-        assert server.power_on.call_count == 1
+        assert self.serverAction(server).call_count == 1
 
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_power_on_returns_missconfigured_after_power_on_authentication_exception(self, client, hostFinder, sleep):
+    def test_action_returns_missconfigured_after_action_authentication_exception(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        server.power_on.side_effect = [hetznercloud.HetznerAuthenticationException(), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerAuthenticationException(), server]
         returnCode = self.takeAction(agent)
         assert returnCode == stonith.ReturnCodes.isMissconfigured
