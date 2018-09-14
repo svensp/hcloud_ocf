@@ -3,9 +3,9 @@ import sys
 import os
 sys.path.append( os.path.dirname( os.path.realpath(__file__) ) + '/../../stonith' )
 import unittest
-import Base
+import CallsBase
 
-class TestHetznerCloud(Base.TestBase, unittest.TestCase):
+class TestHetznerCloud(CallsBase.TestBase, unittest.TestCase):
 
     def takeAction(self, agent):
         return agent.powerOn()

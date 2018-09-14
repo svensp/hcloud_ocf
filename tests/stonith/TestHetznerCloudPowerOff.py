@@ -7,12 +7,12 @@ import unittest
 import stonith_agent
 import stonith
 import hetznercloud
-import Base
+import CallsBase
 from unittest import mock
 from mock import Mock
 from mock import patch
 
-class TestHetznerCloud(Base.TestBase, unittest.TestCase):
+class TestHetznerCloud(CallsBase.TestBase, unittest.TestCase):
 
     def takeAction(self, agent):
         return agent.powerOff()
