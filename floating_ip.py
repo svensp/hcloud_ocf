@@ -106,6 +106,8 @@ class FloatingIp(ocf.ResourceAgent):
                     success = True
                 except HetznerInternalServerErrorException:
                     time.sleep( self.wait )
+                except ValueError: #JSONDecodeError
+                    time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
                 except EnvironmentError: 
@@ -120,6 +122,8 @@ class FloatingIp(ocf.ResourceAgent):
                 except HetznerActionException:
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except ValueError: #JSONDecodeError
                     time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
@@ -137,6 +141,8 @@ class FloatingIp(ocf.ResourceAgent):
                 except HetznerActionException:
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except ValueError: #JSONDecodeError
                     time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
@@ -162,6 +168,8 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
                     time.sleep( self.wait )
+                except ValueError: #JSONDecodeError
+                    time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
                 except EnvironmentError: 
@@ -176,6 +184,8 @@ class FloatingIp(ocf.ResourceAgent):
                         isActive = True
                     success = True
                 except HetznerInternalServerErrorException:
+                    time.sleep( self.wait )
+                except ValueError: #JSONDecodeError
                     time.sleep( self.wait )
                 except HetznerActionException:
                     time.sleep( self.wait )
