@@ -113,6 +113,8 @@ class Stonith():
                 time.sleep( self.wait )
             except HetznerRateLimitExceeded:
                 time.sleep( self.rateLimitWait )
+            except ValueError: # JSONDecodeError
+                time.sleep( self.wait )
 
         hostnames = []
         for host in hosts:
@@ -141,6 +143,8 @@ class Stonith():
                     time.sleep(self.rateLimitWait)
                 except HetznerActionException:
                     time.sleep(self.wait)
+                except ValueError: # JSONDecodeError
+                    time.sleep( self.wait )
 
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
@@ -166,6 +170,8 @@ class Stonith():
                     time.sleep(self.rateLimitWait)
                 except HetznerActionException:
                     time.sleep(self.wait)
+                except ValueError: # JSONDecodeError
+                    time.sleep( self.wait )
 
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
@@ -191,6 +197,8 @@ class Stonith():
                     time.sleep(self.wait)
                 except HetznerRateLimitExceeded:
                     time.sleep(self.rateLimitWait)
+                except ValueError: # JSONDecodeError
+                    time.sleep(self.wait)
 
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
@@ -217,6 +225,8 @@ class Stonith():
                     time.sleep(self.wait)
                 except HetznerRateLimitExceeded:
                     time.sleep(self.rateLimitWait)
+                except ValueError: # JSONDecodeError
+                    time.sleep(self.wait)
 
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
