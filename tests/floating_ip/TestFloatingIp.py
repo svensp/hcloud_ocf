@@ -105,6 +105,19 @@ class TestFloatingIp(unittest.TestCase):
         ip.assign_to_server.assert_called_once_with( server.id )
         sleep.assert_called_once()
 
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_start_retries_on_host_json_decode_error(self, client, makeHostFinder, sleep,decodeError):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[decodeError, ip])
+
+        assert floatingIp.start() is ocf.ReturnCodes.success
+        ip.assign_to_server.assert_called_once_with( server.id )
+        sleep.assert_called_once()
+
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
@@ -124,6 +137,19 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.assign_to_server = mock.Mock(side_effect=[hetznercloud.HetznerRateLimitExceeded(''), ip])
+
+        assert floatingIp.start() is ocf.ReturnCodes.success
+        ip.assign_to_server.assert_called_with( server.id )
+        sleep.assert_called_once()
+
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_start_retries_on_assign_ratemlimit_error(self, client, makeHostFinder, sleep, decodeError):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        ip.assign_to_server = mock.Mock(side_effect=[decodeError, ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_with( server.id )
@@ -188,6 +214,18 @@ class TestFloatingIp(unittest.TestCase):
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
 
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_monitor_retries_on_server_json_decode_error(self, client, makeHostFinder, sleep, decodeError):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        ip.server = server.id
+        hostFinder.find = mock.Mock(side_effect=[decodeError, server])
+
+        assert floatingIp.monitor() is ocf.ReturnCodes.success
+
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
@@ -204,6 +242,19 @@ class TestFloatingIp(unittest.TestCase):
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
     def test_monitor_retries_on_ip_server_error(self, client, makeHostFinder, sleep):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        ip.server = server.id
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[hetznercloud.HetznerInternalServerErrorException(''), ip])
+
+        assert floatingIp.monitor() is ocf.ReturnCodes.success
+        sleep.assert_called_once()
+
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_monitor_retries_on_ip_json_decode_error(self, client, makeHostFinder, sleep, decodeError):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
