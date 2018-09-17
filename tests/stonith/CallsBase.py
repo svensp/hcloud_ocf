@@ -60,6 +60,18 @@ class TestBase(Base.TestBase):
         assert sleep.call_count == 1
         assert self.serverAction(server).call_count == 2
 
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.HostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_action_is_repeatet_after_wait_on_action_action_error(self, client, hostFinder, sleep, decoderError):
+        server, hostFinder, agent = self.makeBase(client, hostFinder)
+        agent.client = client
+        self.serverAction(server).side_effect = [decoderError, server]
+        self.takeAction(agent)
+        assert sleep.call_count == 1
+        assert self.serverAction(server).call_count == 2
+
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')

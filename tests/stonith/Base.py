@@ -67,6 +67,22 @@ class TestBase(abc.ABC):
         except AttributeError:
             pass
 
+    @mock.patch('json.decoder.JSONDecodeError')
+    @mock.patch('time.sleep')
+    @mock.patch('shared.HostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_action_is_repeatet_after_wait_on_host_find_json_decode_error(self, client, hostFinder, sleep, decodeError):
+        server, hostFinder, agent = self.makeBase(client, hostFinder)
+        agent.client = client
+        hostFinder.find.side_effect = [decodeError, server]
+        self.takeAction(agent)
+        assert sleep.call_count == 1
+        assert hostFinder.find.call_count == 2
+        try:
+            self.serverAction(server).assert_called_once()
+        except AttributeError:
+            pass
+
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
