@@ -66,6 +66,13 @@ class FloatingIp(ocf.ResourceAgent):
                 - hostname: The hosts `hostname` matches the server name in the api
                 ''',
                 required=False, unique=False)
+        self.failOnHostfindFailure = ocf.Parameter('fail_on_host_find_failure', shortDescription='Exit with misconfigured if the host was not found' ,
+                description='''
+                If this is set to true then failing to find a host will cause the agent to exit
+                with a Missconfigured error - usually a fatal exit code preventing the resource
+                from being started again without user interventaion
+                ''',
+                required=False, unique=False)
         self.sleep = ocf.Parameter('sleep', default='5', shortDescription='Sleep duration when an api request fails' ,
                 description='''
                 The number of seconds to wait when encountering a problem with the api.
@@ -112,7 +119,9 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.rateLimitWait )
                 except EnvironmentError: 
                     # Host not found in api
-                    return ocf.ReturnCodes.isMissconfigured
+                    if self.failOnHostfindFailure.get() is 'true':
+                        return ocf.ReturnCodes.isMissconfigured
+                    time.sleep( self.wait )
 
             success = False
             while not success:
@@ -174,7 +183,9 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.rateLimitWait )
                 except EnvironmentError: 
                     # Host not found in api
-                    return ocf.ReturnCodes.isMissconfigured
+                    if self.failOnHostfindFailure.get() is 'true':
+                        return ocf.ReturnCodes.isMissconfigured
+                    time.sleep( self.wait )
 
             success = False
             while not success:

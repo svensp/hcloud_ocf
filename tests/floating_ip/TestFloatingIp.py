@@ -50,11 +50,23 @@ class TestFloatingIp(unittest.TestCase):
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_start_returns_missconfigured_on_not_found(self, client, makeHostFinder, sleep):
+    def test_start_retries_on_not_found(self, client, makeHostFinder, sleep):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        hostFinder.find = mock.Mock(side_effect=[EnvironmentError('host not found'), server])
+
+        assert floatingIp.start() is ocf.ReturnCodes.success
+        ip.assign_to_server.assert_called_once_with( server.id )
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_start_returns_missconfigured_on_not_found_and_fail_is_set(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         hostFinder.find = mock.Mock(side_effect=EnvironmentError('host not found'))
 
+        floatingIp.failOnHostfindFailure.set('true')
         assert floatingIp.start() is ocf.ReturnCodes.isMissconfigured
 
     @mock.patch('time.sleep')
@@ -262,12 +274,25 @@ class TestFloatingIp(unittest.TestCase):
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_monitor_returns_missconfigured_on_not_found(self, client, makeHostFinder, sleep):
+    def test_monitor_retries_on_not_found(self, client, makeHostFinder, sleep):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        ip.server = server.id
+        hostFinder.find = mock.Mock(side_effect=[EnvironmentError('host not found'), server])
+
+        assert floatingIp.monitor() is ocf.ReturnCodes.success
+        sleep.assert_called_once()
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_monitor_returns_missconfigured_on_not_found_and_fail_set(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
         hostFinder.find = mock.Mock(side_effect=EnvironmentError('host not found'))
 
+        floatingIp.failOnHostfindFailure.set('true')
         assert floatingIp.monitor() is ocf.ReturnCodes.isMissconfigured
 
     def test_stop_returns_success(self):

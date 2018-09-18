@@ -55,7 +55,7 @@ class TestBase(abc.ABC):
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_action_is_on_host_find_environment_error_if_fail_is_iset(self, client, hostFinder, sleep):
+    def test_action_is_on_host_find_environment_error_if_fail_is_set(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
         hostFinder.find = Mock(side_effect=[EnvironmentError("Host not found"), server])
