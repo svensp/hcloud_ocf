@@ -40,6 +40,36 @@ class TestBase(abc.ABC):
     @mock.patch('time.sleep')
     @mock.patch('shared.HostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_action_is_repeatet_after_wait_on_host_find_environment_error(self, client, hostFinder, sleep):
+        server, hostFinder, agent = self.makeBase(client, hostFinder)
+        agent.client = client
+        hostFinder.find = Mock(side_effect=[EnvironmentError("Host not found"), server])
+        self.takeAction(agent)
+        assert sleep.call_count == 1
+        assert hostFinder.find.call_count == 2
+        try:
+            self.serverAction(server).assert_called_once()
+        except AttributeError:
+            pass
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.HostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_action_is_on_host_find_environment_error_if_fail_is_iset(self, client, hostFinder, sleep):
+        server, hostFinder, agent = self.makeBase(client, hostFinder)
+        agent.client = client
+        hostFinder.find = Mock(side_effect=[EnvironmentError("Host not found"), server])
+        agent.failOnHostfindFailure.set('true')
+        self.assertRaises(EnvironmentError, self.takeAction, agent)
+        assert hostFinder.find.call_count is 1
+        try:
+            assert self.serverAction(server).assert_call_count is 0
+        except AttributeError:
+            pass
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.HostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
     def test_action_is_repeatet_after_wait_on_host_find_server_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client

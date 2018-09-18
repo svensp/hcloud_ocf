@@ -58,6 +58,13 @@ class Stonith():
                 -> hostnames can be mapped to server names in the api
                 ''',
                 required=False, unique=False)
+        self.failOnHostfindFailure = stonith.Parameter('fail_on_host_find_failure', shortDescription='Exit with misconfigured if the host was not found' ,
+                description='''
+                If this is set to true then failing to find a host will cause the agent to exit
+                with a Missconfigured error - usually a fatal exit code preventing the resource
+                from being started again without user interventaion
+                ''',
+                required=False, unique=False)
         self.wait = 5
         self.rateLimitWait = 5
 
@@ -225,6 +232,10 @@ class Stonith():
                     time.sleep(self.wait)
                 except HetznerRateLimitExceeded:
                     time.sleep(self.rateLimitWait)
+                except EnvironmentError as e: # Host not found
+                    if self.failOnHostfindFailure.get() is 'true':
+                        raise e
+                    time.sleep(self.wait)
                 except ValueError: # JSONDecodeError
                     time.sleep(self.wait)
 
