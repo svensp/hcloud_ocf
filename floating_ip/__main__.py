@@ -8,6 +8,7 @@
 import sys
 import ocf
 import floating_ip
+import traceback
 
 if __name__ == '__main__':
     application = ocf.AgentRunner()
@@ -23,6 +24,13 @@ if __name__ == '__main__':
 
     try:
         code = application.run(resourceAgent, api.action()) 
-    except AssertionError:
+    except AssertionError as e:
+        # Thanks to https://stackoverflow.com/questions/11587223/how-to-handle-assertionerror-in-python-and-find-out-which-line-or-statement-it-o?rq=1
+        _, _, tb = sys.exc_info()
+        traceback.print_tb(tb)
+        tb_info = traceback.extract_tb(tb)
+        filename, line, func, text = tb_info[-1]
+
+        print('An error occurred on line {} in statement {}'.format(line, text))
         code = ocf.ReturnCodes.isMissconfigured
     sys.exit( code )
