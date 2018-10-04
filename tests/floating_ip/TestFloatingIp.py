@@ -50,10 +50,21 @@ class TestFloatingIp(unittest.TestCase):
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_start_retries_on_not_found(self, client, makeHostFinder, sleep):
+    def test_start_retries_on_host_not_found(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         hostFinder.find = mock.Mock(side_effect=[EnvironmentError('host not found'), server])
+
+        assert floatingIp.start() is ocf.ReturnCodes.success
+        ip.assign_to_server.assert_called_once_with( server.id )
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_start_retries_on_ip_not_found(self, client, makeHostFinder, sleep):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), server])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -274,11 +285,23 @@ class TestFloatingIp(unittest.TestCase):
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
     @mock.patch('hetznercloud.HetznerCloudClient')
-    def test_monitor_retries_on_not_found(self, client, makeHostFinder, sleep):
+    def test_monitor_retries_on_host_not_found(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
         hostFinder.find = mock.Mock(side_effect=[EnvironmentError('host not found'), server])
+
+        assert floatingIp.monitor() is ocf.ReturnCodes.success
+        sleep.assert_called_once()
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.makeHostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_monitor_retries_on_ip_not_found(self, client, makeHostFinder, sleep):
+
+        server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
+        ip.server = server.id
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), server])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
         sleep.assert_called_once()
