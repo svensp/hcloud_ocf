@@ -8,6 +8,7 @@
 import ocf
 import time
 import shared
+from ocf import AbortWithError
 from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
 from hetznercloud.exceptions import HetznerAuthenticationException, HetznerInternalServerErrorException, HetznerActionException, HetznerRateLimitExceeded
@@ -103,45 +104,58 @@ class FloatingIp(ocf.ResourceAgent):
         self.wait = int( self.sleep.get() )
         self.rateLimitWait = max( int( self.sleep.get() ) * 2, 10 )
 
-    def start(self):
+    def findServer(self):
         hostFinder = shared.makeHostFinder( self.finderType.get() )
-        try:
-            success = False
-            while not success:
-                try:
-                    server = hostFinder.find( self.client )
-                    success = True
-                except HetznerInternalServerErrorException:
-                    time.sleep( self.wait )
-                except ValueError: #JSONDecodeError
-                    time.sleep( self.wait )
-                except HetznerRateLimitExceeded:
-                    time.sleep( self.rateLimitWait )
-                except EnvironmentError: 
-                    # Host not found in api
-                    if self.failOnHostfindFailure.get() is 'true':
-                        return ocf.ReturnCodes.isMissconfigured
-                    time.sleep( self.wait )
+        success = False
+        while not success:
+            try:
+                server = hostFinder.find( self.client )
+                success = True
+            except HetznerInternalServerErrorException:
+                time.sleep( self.wait )
+            except ValueError: #JSONDecodeError
+                time.sleep( self.wait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
+            except EnvironmentError: 
+                # Host not found in api
+                if self.failOnHostfindFailure.get() is 'true':
+                    raise AbortWithError(ocf.ReturnCodes.isMissconfigured, 'Failed to find server')
+                time.sleep( self.wait )
 
-            success = False
-            while not success:
-                try:
-                    ip = self.ipFinder.find( self.client, self.floatingIp.get() )
-                    success = True
-                except HetznerActionException:
-                    time.sleep( self.wait )
-                except HetznerInternalServerErrorException:
-                    time.sleep( self.wait )
-                except ValueError: #JSONDecodeError
-                    time.sleep( self.wait )
-                except HetznerRateLimitExceeded:
-                    time.sleep( self.rateLimitWait )
+        return server
+
+    def findIp(self):
+        success = False
+        while not success:
+            try:
+                ip = self.ipFinder.find( self.client, self.floatingIp.get() )
+                success = True
+            except HetznerActionException:
+                time.sleep( self.wait )
+            except HetznerInternalServerErrorException:
+                time.sleep( self.wait )
+            except ValueError: #JSONDecodeError
+                time.sleep( self.wait )
+            except HetznerRateLimitExceeded:
+                time.sleep( self.rateLimitWait )
+            except EnvironmentError: 
+                # Ip not found in api
+                if self.failOnHostfindFailure.get() is 'true':
+                    raise AbortWithError(ocf.ReturnCodes.isMissconfigured, 'Failed to find ip')
+                time.sleep( self.wait )
+
+        return ip
+
+    def start(self):
+        try:
+            server = self.findServer()
+            ip = self.findIp()
 
             # Ip already assigned, no action required
             if ip.server == server.id:
                 return ocf.ReturnCodes.success
                 
-
             success = False
             while not success:
                 try:
@@ -155,6 +169,7 @@ class FloatingIp(ocf.ResourceAgent):
                     time.sleep( self.wait )
                 except HetznerRateLimitExceeded:
                     time.sleep( self.rateLimitWait )
+
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured
@@ -167,41 +182,13 @@ class FloatingIp(ocf.ResourceAgent):
         isActive = False
 
         try:
-            hostFinder = shared.makeHostFinder( self.finderType.get() )
-            success = False
-            while not success:
-                try:
-                    server = hostFinder.find( self.client )
-                    success = True
-                except HetznerActionException:
-                    time.sleep( self.wait )
-                except HetznerInternalServerErrorException:
-                    time.sleep( self.wait )
-                except ValueError: #JSONDecodeError
-                    time.sleep( self.wait )
-                except HetznerRateLimitExceeded:
-                    time.sleep( self.rateLimitWait )
-                except EnvironmentError: 
-                    # Host not found in api
-                    if self.failOnHostfindFailure.get() is 'true':
-                        return ocf.ReturnCodes.isMissconfigured
-                    time.sleep( self.wait )
+            server = self.findServer()
 
-            success = False
-            while not success:
-                try:
-                    ip = self.ipFinder.find( self.client, self.floatingIp.get() )
-                    if ip.server == server.id:
-                        isActive = True
-                    success = True
-                except HetznerInternalServerErrorException:
-                    time.sleep( self.wait )
-                except ValueError: #JSONDecodeError
-                    time.sleep( self.wait )
-                except HetznerActionException:
-                    time.sleep( self.wait )
-                except HetznerRateLimitExceeded:
-                    time.sleep( self.rateLimitWait )
+            ip = self.findIp()
+
+            if ip.server == server.id:
+                isActive = True
+                
         except HetznerAuthenticationException:
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             return ocf.ReturnCodes.isMissconfigured

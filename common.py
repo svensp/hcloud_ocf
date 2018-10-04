@@ -1,6 +1,11 @@
 from lxml import etree as ET
 import socket
 
+class AbortWithError(Exception):
+    def __init__(self, errorCode, errorMessage):
+        self.errorCode = errorCode
+        self.errorMessage = errorMessage
+
 class ParameterXmlBuilder:
     def build(self, parametersNode, parameters):
         for parameter in parameters:

@@ -8,7 +8,7 @@
 import os
 import sys
 from lxml import etree as ET
-from common import Populater, Parameter, ResourceAgent, ParameterXmlBuilder
+from common import AbortWithError, Populater, Parameter, ResourceAgent, ParameterXmlBuilder
 
 class ReturnCodes:
     success = 0
@@ -119,5 +119,8 @@ class AgentRunner:
         try:
             actionMethod = actions[action]
             return actionMethod()
+        except AbortWithError as e:
+            print(e.errorMessage)
+            return e.errorCode
         except KeyError:
             return OCfReturnCodes.isNotImplemented

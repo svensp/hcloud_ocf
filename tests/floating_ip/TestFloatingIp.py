@@ -9,6 +9,7 @@ import hetznercloud
 import time
 import unittest
 import mock
+from ocf import AbortWithError
 
 class TestFloatingIp(unittest.TestCase):
 
@@ -64,7 +65,7 @@ class TestFloatingIp(unittest.TestCase):
     def test_start_retries_on_ip_not_found(self, client, makeHostFinder, sleep):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
-        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), server])
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), ip])
 
         assert floatingIp.start() is ocf.ReturnCodes.success
         ip.assign_to_server.assert_called_once_with( server.id )
@@ -78,7 +79,14 @@ class TestFloatingIp(unittest.TestCase):
         hostFinder.find = mock.Mock(side_effect=EnvironmentError('host not found'))
 
         floatingIp.failOnHostfindFailure.set('true')
-        assert floatingIp.start() is ocf.ReturnCodes.isMissconfigured
+
+        exception = None
+        try:
+            floatingIp.start()
+        except AbortWithError as e:
+            exception = e
+
+        assert exception.errorCode is ocf.ReturnCodes.isMissconfigured
 
     @mock.patch('time.sleep')
     @mock.patch('shared.makeHostFinder')
@@ -301,7 +309,7 @@ class TestFloatingIp(unittest.TestCase):
 
         server, hostFinder, ip, floatingIp = self.makeBase(client, makeHostFinder)
         ip.server = server.id
-        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), server])
+        floatingIp.ipFinder.find = mock.Mock(side_effect=[EnvironmentError('ip not found'), ip])
 
         assert floatingIp.monitor() is ocf.ReturnCodes.success
         sleep.assert_called_once()
@@ -316,7 +324,14 @@ class TestFloatingIp(unittest.TestCase):
         hostFinder.find = mock.Mock(side_effect=EnvironmentError('host not found'))
 
         floatingIp.failOnHostfindFailure.set('true')
-        assert floatingIp.monitor() is ocf.ReturnCodes.isMissconfigured
+
+        exception = None
+        try:
+            floatingIp.monitor()
+        except AbortWithError as e:
+            exception = e
+
+        assert exception.errorCode is ocf.ReturnCodes.isMissconfigured
 
     def test_stop_returns_success(self):
         floatingIp = floating_ip.FloatingIp()
