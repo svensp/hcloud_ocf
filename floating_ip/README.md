@@ -6,7 +6,7 @@ See the [shared documentation](../)
 
 ## Examples
 ### 
-`resource describe ocf:hetzner:FloatingIP`
+`pcs resource describe ocf:hetzner:FloatingIP`
 
 ### Create via pcs
 `pcs resource create floating_ip ocf:hetzner:FloatingIp`
