@@ -74,8 +74,8 @@ class HostnameHostFinder(HostFinder):
 class TestHostFinder(HostFinder):
     def find(self, client) -> HetznerCloudServer:
         name = os.environ.get('TESTHOST')
-        servers = client.servers().get_all(name=name)
-        if len(servers) < 1:
+        servers = list( client.servers().get_all(name=name) )
+        if len( servers ) < 1:
             raise EnvironmentError('Host '+name+' not found in hcloud api.')
         return servers[0]
 
