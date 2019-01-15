@@ -1,19 +1,35 @@
 # hcloud\_ocf
-Hetzner Cloud Pacemaker OCF Resource Agents, FloatingIp and STONITH device
+Pacemaker OCF Resource Agents to manage Hetzner Cloud resources.
 
-## Install
-The following python extensions need to be present on your system:
+## Floating Ip
+Floating ips are also known as failover ips. They can be switched between hosts.
 
-- lxml
-- hetznercloud
+[Floating IP Resource Agent](floating_ip)
 
-Download the zip-packaged distribution files from the releases page and place
-them in your ocf resource agent directory and/or stonith plugin directory
-- `floating_ip` is an ocf resource agent, the default directory for them ist `/usr/lib/ocf/resource.d/hetzner/`  
-  Note that the hetzner directory may be named differently, but must match the resource agent name `ocf:DIRECTORY:floating_ip`
-- `hetzner_cloud` is an ocf resource agent, the default directory for them ist `/usr/lib/stonith/plugins/external`
+## Fencing / Stonith
+Stonith devices ensure data safety by 'killing' a node believed to have failed.
 
-## Test
+This protects against the following scenario:
+- Two hosts lose connection with eachother
+- both allow edit to the data but can no longer sync it with the other host
+- when they reconnect both have different 'current' data which cannot be merged
+  back together automatically(or at all)
+
+Think of it as both hosts creating a git branch of the data when they split,
+except there is no merge functionality.
+
+[Stonith device](stonith)
+
+## Volume
+Hetzner volumes provide attachable storage block devices on which filesystems
+can be written and used like any other disk drive. They serve roughly the same
+purpose as a drbd master/slave installation.
+
+Not yet implemented.
+
+### Development
+
+#### Test
 Copy .env.template to .env and add your hetzner cloud token and floating ip
 address. Then source your .env before running the scripts
 
@@ -27,15 +43,13 @@ Note that it is not strictly necessary to copy the .env.template file before
 modifiying it. Doing so is to prevent accidently commiting it as the .env file
 is in the .gitignore
 
-## Usage
-- [Floating IP Resource Agent](floating_ip)
-- [Stonith device](stonith)
+#### Packages
+This section lists why packages cannot be packaged into the executable.
 
-## Packages
-### lxml
+##### lxml
 lxml uses c-code and thus cannot be loaded from a zip file
 
-### hetznercloud
+##### hetznercloud
 hetznercloud itself could be added to the package. The problem is in the
 dependency to certifi. Certifi does not work from zip apps if they have a
 shebang. My current guess on this is the fact that the cacert.pem is extracted
