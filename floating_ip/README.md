@@ -40,7 +40,7 @@ This example is a modified version of a command given in issue #1. I use pcs so
 I do not have a way to test this command as of now. Please report success or
 problems in Issue #2
 
-	crm primitive vip_floating_ip ocf:hetzner:failover_ip \
+	crm primitive vip_floating_ip ocf:hetzner:floating_ip \
 		params ip=xxx.xxx.xxx.xxx api_token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
 		op start interval=0 timeout=20 \
 		op stop interval=0 timeout=20 \
