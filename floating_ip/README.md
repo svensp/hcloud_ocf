@@ -7,7 +7,7 @@ An automated install script exists but it is not yet extensivly tested.
 You still have to install python3 yourself with your distributions packaging
 tool.
 
-	curl 'https://gist.githubusercontent.com/svensp/1065ac4cbf9873a10eda7b85d4b5d07f/raw/f3112d21f5165ccc8958076198da8176164f0841/install_hcloud_floating_ip.sh' | sudo sh
+	sudo 'curl 'https://gist.githubusercontent.com/svensp/1065ac4cbf9873a10eda7b85d4b5d07f/raw/f3112d21f5165ccc8958076198da8176164f0841/install_hcloud_floating_ip.sh' | sh'
 
 ### Manual
 The resource agent is written for python3 so you will have to install it on your
