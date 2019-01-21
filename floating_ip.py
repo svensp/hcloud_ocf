@@ -47,7 +47,7 @@ class FloatingIp(ocf.ResourceAgent):
                 itself.
                 ''',
                 required=True, unique=True)
-        self.floatingIp.validate = shared.Ipv4Validator(self.floatingIp)
+        self.floatingIp.validate = shared.IpvAnyValidator(self.floatingIp)
         self.apiToken = ocf.Parameter('api_token', shortDescription='Hetner Cloud api token' ,
                 description='''
                 The Hetzner Cloud api token with which the ip address can be managed.
