@@ -1,0 +1,2 @@
+class HetznerCloud:
+    pass
