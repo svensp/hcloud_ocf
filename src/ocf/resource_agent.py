@@ -31,5 +31,14 @@ class ResourceAgent(abc.ABC):
     def migrateFrom(self):
         raise ocf.exception.Exception( ocf.return_codes.UnimplementedError() )
 
+    def help(self):
+        return ocf.return_codes.Success()
+
+    def validate(self):
+        return ocf.return_codes.Success()
+
+    def metaData(self):
+        return ocf.return_codes.Success()
+
     def run(self, action):
         return self.runner.setResourceAgent(self).setAction(action).run()
