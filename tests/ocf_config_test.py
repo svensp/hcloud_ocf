@@ -9,4 +9,4 @@ class OcfConfigTest(unittest.TestCase):
         self.ocfConfig = ocf.config.Config(environ)
 
     def testOcfConfigExists(self):
-        ocfConfig = ocf.config.Config()
+        pass
