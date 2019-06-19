@@ -2,6 +2,8 @@ import unittest
 import unittest.mock
 import ocf.default_resource_agent
 import ocf.exception
+import ocf.printer
+import xml.etree.ElementTree as ET
 
 class OcfDefaultResourceAgentTest(unittest.TestCase):
 
@@ -81,6 +83,11 @@ class OcfDefaultResourceAgentTest(unittest.TestCase):
         self.resourceAgent.metaData = unittest.mock.Mock(name="metaData")
         self.resourceAgent.run('meta-data')
         self.resourceAgent.metaData.assert_called()
+
+    def testMetaDataPrintsXml(self):
+        self.resourceAgent.run('meta-data')
+        xml = self.resourceAgent.printer.log
+        ET.fromstring(xml)
 
     def testMetaDataReturnsSuccess(self):
         returnCode = self.resourceAgent.metaData()

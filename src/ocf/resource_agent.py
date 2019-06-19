@@ -3,10 +3,12 @@ from abc import abstractmethod
 import ocf.exception
 import ocf.return_codes
 import ocf.resource_agent_runner
+import ocf.printer
 
 class ResourceAgent(abc.ABC):
-    def __init__(self, runner = ocf.resource_agent_runner.ResourceAgentRunner() ):
+    def __init__(self, runner = ocf.resource_agent_runner.ResourceAgentRunner(), printer = ocf.printer.Printer() ):
         self.runner = runner
+        self.printer = printer
 
     @abstractmethod
     def start(self):
@@ -38,6 +40,7 @@ class ResourceAgent(abc.ABC):
         return ocf.return_codes.Success()
 
     def metaData(self):
+        self.printer.print("<xml></xml>")
         return ocf.return_codes.Success()
 
     def run(self, action):
