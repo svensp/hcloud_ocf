@@ -4,11 +4,16 @@ import ocf.exception
 import ocf.return_codes
 import ocf.resource_agent_runner
 import ocf.printer
+import ocf.metadata
 
 class ResourceAgent(abc.ABC):
-    def __init__(self, runner = ocf.resource_agent_runner.ResourceAgentRunner(), printer = ocf.printer.Printer() ):
+    def __init__(self,
+            runner = ocf.resource_agent_runner.ResourceAgentRunner(),
+            printer = ocf.printer.Printer(),
+            meta= ocf.metadata.Metadata() ):
         self.runner = runner
         self.printer = printer
+        self.meta = meta
 
     @abstractmethod
     def start(self):
@@ -41,6 +46,8 @@ class ResourceAgent(abc.ABC):
 
     def metaData(self):
         self.printer.print("<xml></xml>")
+        self.meta.setPrinter(self.printer).print()
+
         return ocf.return_codes.Success()
 
     def run(self, action):

@@ -84,11 +84,11 @@ class OcfDefaultResourceAgentTest(unittest.TestCase):
         self.resourceAgent.run('meta-data')
         self.resourceAgent.metaData.assert_called()
 
-    def testMetaDataPrintsXml(self):
-        self.resourceAgent.run('meta-data')
-        xml = self.resourceAgent.printer.log
-        ET.fromstring(xml)
-
     def testMetaDataReturnsSuccess(self):
         returnCode = self.resourceAgent.metaData()
         self.assertIsInstance(returnCode, ocf.return_codes.Success)
+
+    def testMetaDataUsesMetadataPrinter(self):
+        self.resourceAgent.meta.print = unittest.mock.Mock(name="meta.print")
+        self.resourceAgent.run('meta-data')
+        self.resourceAgent.meta.print.assert_called()
