@@ -1,5 +1,6 @@
 from io import StringIO
 from lxml import etree
+import ocf.parameter
 
 class Metadata():
 
@@ -7,6 +8,7 @@ class Metadata():
         self.name = "default-name"
         self.version = "1.0"
         self.descriptions = {}
+        self.parameters = {}
 
     def setDescription(self, shortDescription, longDescription, language = 'en'):
         self.descriptions[language] = {
@@ -24,31 +26,38 @@ class Metadata():
         self.printer = printer
         return self
 
+    def clearParameters(self):
+        self.parameters = {}
+
+    def createParameter(self, name):
+        self.parameters[name] = ocf.parameter.Parameter(name)
+
     def print(self):
-        self.prepareXmlWithResourceAgentTag()
-        self.addName()
-        self.addVersion()
-        self.addDescriptions()
-        self.xmlToString()
-        self.printFullXml()
+        self.__prepareXmlWithResourceAgentTag()
+        self.__addName()
+        self.__addVersion()
+        self.__addDescriptions()
+        self.__addParameters()
+        self.__xmlToString()
+        self.__printFullXml()
         #self.printExampleXml()
 
-    def prepareXmlWithResourceAgentTag(self):
+    def __prepareXmlWithResourceAgentTag(self):
         self.xmlTree = etree.parse(StringIO('''<?xml version="1.0"?>
 
         <!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
         <resource-agent />'''))
         self.xmlRoot = self.xmlTree.getroot()
 
-    def addName(self):
+    def __addName(self):
         self.xmlRoot.set("name", self.name)
 
-    def addVersion(self):
+    def __addVersion(self):
         self.xmlRoot.set("version", self.version)
         self.versionElement = etree.SubElement(self.xmlRoot, "version")
         self.versionElement.text = self.version
 
-    def addDescriptions(self):
+    def __addDescriptions(self):
         for languageKey in self.descriptions:
             shortDescriptionElement = etree.SubElement(self.xmlRoot, "shortdesc")
             shortDescriptionElement.set('lang', languageKey)
@@ -56,11 +65,18 @@ class Metadata():
             longDescriptionElement = etree.SubElement(self.xmlRoot, "longdesc")
             longDescriptionElement.set('lang', languageKey)
             longDescriptionElement.text = self.descriptions[languageKey]["long"]
+    
+    def __addParameters(self):
+        paramaetersElement = etree.SubElement(self.xmlRoot, "parameters")
+        for key in self.parameters:
+            parameter = self.parameters[key]
+            parameter.setParentXml(paramaetersElement) \
+                .addXmlToParent()
 
-    def xmlToString(self):
+    def __xmlToString(self):
         self.xmlContent = etree.tostring(self.xmlTree, pretty_print=True).decode('utf-8')
 
-    def printFullXml(self):
+    def __printFullXml(self):
         print(self.xmlContent)
         self.printer.print(self.xmlContent)
 

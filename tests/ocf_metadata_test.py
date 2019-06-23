@@ -75,6 +75,20 @@ class OcfMetadataTest(unittest.TestCase):
         self.assertXmlHasElementText('/resource-agent/longdesc', 'long description de', {"lang":"de"})
         self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description de', {"lang":"de"})
 
+    def testHasParameter(self):
+        self.loadXml()
+
+        self.assertXmlHasXpath('/resource-agent/parameters')
+
+    def testParametersAreAdded(self):
+
+        self.metadata.createParameter("test-parameter")
+
+        self.loadXml()
+
+        self.assertXmlHasXpath('/resource-agent/parameters/parameter',
+                {"name":"test-parameter"})
+
     def testMetadataValidates(self):
         # deactivated until schema building is tested
         return
@@ -98,10 +112,12 @@ class OcfMetadataTest(unittest.TestCase):
     def assertSetUpRuns(self):
         pass
 
-    def assertXmlHasXpath(self, xpath, expectedElements=1):
+    def assertXmlHasXpath(self, xpath, requiredAttributes = {}, expectedElements=1):
         elements = self.xmlTree.xpath(xpath) 
 
-        self.assertEqual(expectedElements, len(elements), "XML Element "+xpath+" not found in metadata" )
+        filteredElements = self.filterElementsWithAttributes(elements, requiredAttributes)
+
+        self.assertEqual(expectedElements, len(filteredElements), "XML Element "+xpath+" with "+str(requiredAttributes)+" not found in metadata" )
         if expectedElements == 1:
             return elements[0]
 
