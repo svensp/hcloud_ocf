@@ -6,6 +6,13 @@ class Metadata():
     def __init__(self):
         self.name = "default-name"
         self.version = "1.0"
+        self.descriptions = {}
+
+    def setDescription(self, shortDescription, longDescription, language = 'en'):
+        self.descriptions[language] = {
+            "long": longDescription,
+            "short": shortDescription
+        }
 
     def setName(self, name):
         self.name = name
@@ -21,6 +28,7 @@ class Metadata():
         self.prepareXmlWithResourceAgentTag()
         self.addName()
         self.addVersion()
+        self.addDescriptions()
         self.xmlToString()
         self.printFullXml()
         #self.printExampleXml()
@@ -39,6 +47,15 @@ class Metadata():
         self.xmlRoot.set("version", self.version)
         self.versionElement = etree.SubElement(self.xmlRoot, "version")
         self.versionElement.text = self.version
+
+    def addDescriptions(self):
+        for languageKey in self.descriptions:
+            shortDescriptionElement = etree.SubElement(self.xmlRoot, "shortdesc")
+            shortDescriptionElement.set('lang', languageKey)
+            shortDescriptionElement.text = self.descriptions[languageKey]["short"]
+            longDescriptionElement = etree.SubElement(self.xmlRoot, "longdesc")
+            longDescriptionElement.set('lang', languageKey)
+            longDescriptionElement.text = self.descriptions[languageKey]["long"]
 
     def xmlToString(self):
         self.xmlContent = etree.tostring(self.xmlTree, pretty_print=True).decode('utf-8')

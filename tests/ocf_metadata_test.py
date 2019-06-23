@@ -41,8 +41,39 @@ class OcfMetadataTest(unittest.TestCase):
         self.assertElementAttribute(element, "version", '1.0.0')
 
     def testMetadataHasVersion(self):
+        self.metadata.setVersion('1.0.0')
         self.loadXml()
-        self.assertXmlHasXpath('/resource-agent/version')
+        self.assertXmlHasElementText('/resource-agent/version', '1.0.0')
+
+    def testMetadataHasLongDescription(self):
+        self.metadata.setDescription('short description', 'long description', 'en')
+        self.loadXml()
+        self.assertXmlHasElementText('/resource-agent/longdesc', 'long description')
+
+    def testMetadataHasShortDescription(self):
+        self.metadata.setDescription('short description', 'long description', 'en')
+        self.loadXml()
+        self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description')
+
+    def testSameLanguageOverridesDescriptions(self):
+        self.metadata.setDescription('short description', 'long descripiton', 'en')
+        self.metadata.setDescription('overridden short description', 'overridden long description', 'en')
+
+        self.loadXml()
+
+        self.assertXmlHasElementText('/resource-agent/longdesc', 'overridden long description')
+        self.assertXmlHasElementText('/resource-agent/shortdesc', 'overridden short description')
+
+    def testDifferentLanguagesAreAddedSeparatly(self):
+        self.metadata.setDescription('short description en', 'long description en', 'en')
+        self.metadata.setDescription('short description de', 'long description de', 'de')
+
+        self.loadXml()
+
+        self.assertXmlHasElementText('/resource-agent/longdesc', 'long description en', {"lang":"en"})
+        self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description en', {"lang":"en"})
+        self.assertXmlHasElementText('/resource-agent/longdesc', 'long description de', {"lang":"de"})
+        self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description de', {"lang":"de"})
 
     def testMetadataValidates(self):
         # deactivated until schema building is tested
@@ -76,6 +107,40 @@ class OcfMetadataTest(unittest.TestCase):
 
         return elements
 
+    def assertXmlHasElementText(self, xpath, expectedText, requiredAttributes = {}):
+        foundElements = self.findElementsWithText(xpath, expectedText)
+        self.assertTrue( len(foundElements) > 0, "No elements found for xpath "+xpath )
+
+        filteredElements = self.filterElementsWithAttributes(foundElements, requiredAttributes)
+        self.assertTrue( len(filteredElements) > 0, "No elements found for xpath "+xpath+" and required attributes "+str(requiredAttributes) )
+
+        numFoundElements = len(filteredElements)
+        self.assertTrue(numFoundElements > 0, "Text "+expectedText+" not found in "+str(numFoundElements)+" elements of xpath "+xpath)
+
+    def findElementsWithText(self, xpath, expectedText):
+        elements = self.xmlTree.xpath(xpath) 
+        foundElements = []
+        for element in elements:
+            if(element.text == expectedText):
+                foundElements.append( element )
+        return foundElements
+
+    def filterElementsWithAttributes(self, elements, requiredAttributes):
+        matchingElements = []
+
+        for element in elements:
+            allFound = True
+            for attributeName in requiredAttributes:
+                elementValue = element.get(attributeName)
+                requiredValue = requiredAttributes[attributeName]
+                if elementValue != requiredValue:
+                    allFound = False
+
+            if allFound:
+                matchingElements.append( element )
+                
+        return matchingElements
+
     def findDTDPath(self):
         directory = os.path.dirname(os.path.realpath(__file__))
         self.dtdPath = directory + "/resources/ra-api-1.dtd"
@@ -87,4 +152,5 @@ class OcfMetadataTest(unittest.TestCase):
 
     def assertElementAttribute(self, element, attribute, expectedValue):
         self.assertTrue(attribute in element.keys(), "Element does not have attribute " + attribute )
+
         self.assertEquals(expectedValue, element.get(attribute), "Element attribute "+attribute+" is not expected "+expectedValue)
