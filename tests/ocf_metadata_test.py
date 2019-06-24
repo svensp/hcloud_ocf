@@ -86,9 +86,7 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter"
-                    })
+                { "name":"test-parameter" })
 
     def testMultipleParametersAreAddedAsElement(self):
         self.metadata.createParameter("test-parameter")
@@ -97,13 +95,9 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter"
-                    })
+                { "name":"test-parameter" })
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter2"
-                    })
+                { "name":"test-parameter2" })
 
     def testParametersUniqueTrueIsAddedAsAttribute(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -112,10 +106,8 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter",
-                    "unique":"1"
-                    })
+                { "name":"test-parameter",
+                    "unique":"1" })
 
     def testParametersUniqueFalseIsAddedAsAttribute(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -124,10 +116,8 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter",
-                    "unique":"0"
-                    })
+                { "name":"test-parameter",
+                    "unique":"0" })
 
     def testParametersRequiredTrueIsAddedAsAttribute(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -136,10 +126,8 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter",
-                    "required":"1"
-                    })
+                { "name":"test-parameter",
+                    "required":"1" })
 
     def testParametersRequiredFalseIsAddedAsAttribute(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -148,10 +136,8 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter",
-                    "required":"0"
-                    })
+                { "name":"test-parameter",
+                    "required":"0" })
 
     def testParametersRequiredFalseIsAddedAsAttribute(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -160,10 +146,8 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter',
-                {
-                    "name":"test-parameter",
-                    "required":"0"
-                    })
+                { "name":"test-parameter",
+                    "required":"0" })
 
     def testParametersDescriptionsAreAddedAsElement(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -219,9 +203,7 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter/content',
-                {
-                    "type":"boolean"
-                    })
+                { "type":"boolean" })
 
     def testParameterContentTypeIsAddedAsElement(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -230,9 +212,7 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter/content',
-                {
-                    "type":"boolean"
-                    })
+                { "type":"boolean" })
 
     def testParameterDefaultValueIsAddedAsElement(self):
         parameter = self.metadata.createParameter("test-parameter")
@@ -241,9 +221,7 @@ class OcfMetadataTest(unittest.TestCase):
         self.loadXml()
 
         self.assertXmlHasXpath('/resource-agent/parameters/parameter/content',
-                {
-                    "default":"False"
-                    })
+                { "default":"False" })
 
     def testMetadataValidates(self):
         # deactivated until schema building is tested
