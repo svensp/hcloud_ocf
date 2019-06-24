@@ -2,6 +2,7 @@ from io import StringIO
 from lxml import etree
 import ocf.parameter
 import ocf.description
+import ocf.action
 
 class Metadata():
 
@@ -10,6 +11,26 @@ class Metadata():
         self.version = "1.0"
         self.descriptions = ocf.description.DescriptionContainer()
         self.parameters = {}
+        self.actions  = {}
+        self.__makeDefaultActions()
+
+    def __makeDefaultActions(self):
+        self.__addAction( ocf.action.Action('start') )
+        self.__addAction( ocf.action.Action('stop') )
+        self.__addAction( ocf.action.Action('monitor') )
+        self.__addAction( ocf.action.Action('validate-all') )
+        self.__addAction( ocf.action.Action('meta-data') )
+        self.__addAction( ocf.action.Action('promote') )
+        self.__addAction( ocf.action.Action('demote') )
+        self.__addAction( ocf.action.Action('migrate_to') )
+        self.__addAction( ocf.action.Action('migrate_from') )
+        self.__addAction( ocf.action.Action('notify') )
+
+    def __addAction(self, action):
+        self.actions[action.getName()] = action
+
+    def disableAction(self, actionName):
+        del self.action[actionName]
 
     def setDescription(self, shortDescription, longDescription, language = 'en'):
         newDescription = ocf.description.Description(shortDescription, longDescription, language)
@@ -39,6 +60,7 @@ class Metadata():
         self.__addVersion()
         self.__addDescriptions()
         self.__addParameters()
+        self.__addActions()
         self.__xmlToString()
         self.__printFullXml()
         #self.printExampleXml()
@@ -69,11 +91,18 @@ class Metadata():
             parameter.setParentXml(parametersElement) \
                 .addXmlToParent()
 
+    def __addActions(self):
+        actionsElement = etree.SubElement(self.xmlRoot, 'actions')
+        for actionKey in self.actions:
+            action = self.actions[actionKey]
+            action.setParentXml(actionsElement) \
+                    .appendToParentXml()
+            
+
     def __xmlToString(self):
         self.xmlContent = etree.tostring(self.xmlTree, pretty_print=True).decode('utf-8')
 
     def __printFullXml(self):
-        print(self.xmlContent)
         self.printer.print(self.xmlContent)
 
     def printExampleXml(self):
