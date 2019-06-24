@@ -1,20 +1,19 @@
 from io import StringIO
 from lxml import etree
 import ocf.parameter
+import ocf.description
 
 class Metadata():
 
     def __init__(self):
         self.name = "default-name"
         self.version = "1.0"
-        self.descriptions = {}
+        self.descriptions = ocf.description.DescriptionContainer()
         self.parameters = {}
 
     def setDescription(self, shortDescription, longDescription, language = 'en'):
-        self.descriptions[language] = {
-            "long": longDescription,
-            "short": shortDescription
-        }
+        newDescription = ocf.description.Description(shortDescription, longDescription, language)
+        self.descriptions.addDescription(newDescription)
 
     def setName(self, name):
         self.name = name
@@ -30,7 +29,9 @@ class Metadata():
         self.parameters = {}
 
     def createParameter(self, name):
-        self.parameters[name] = ocf.parameter.Parameter(name)
+        createdParameter = ocf.parameter.Parameter(name)
+        self.parameters[name] = createdParameter
+        return createdParameter
 
     def print(self):
         self.__prepareXmlWithResourceAgentTag()
@@ -58,19 +59,14 @@ class Metadata():
         self.versionElement.text = self.version
 
     def __addDescriptions(self):
-        for languageKey in self.descriptions:
-            shortDescriptionElement = etree.SubElement(self.xmlRoot, "shortdesc")
-            shortDescriptionElement.set('lang', languageKey)
-            shortDescriptionElement.text = self.descriptions[languageKey]["short"]
-            longDescriptionElement = etree.SubElement(self.xmlRoot, "longdesc")
-            longDescriptionElement.set('lang', languageKey)
-            longDescriptionElement.text = self.descriptions[languageKey]["long"]
+        self.descriptions.setParentXml(self.xmlRoot) \
+                .appendToParentXml()
     
     def __addParameters(self):
-        paramaetersElement = etree.SubElement(self.xmlRoot, "parameters")
+        parametersElement = etree.SubElement(self.xmlRoot, "parameters")
         for key in self.parameters:
             parameter = self.parameters[key]
-            parameter.setParentXml(paramaetersElement) \
+            parameter.setParentXml(parametersElement) \
                 .addXmlToParent()
 
     def __xmlToString(self):
