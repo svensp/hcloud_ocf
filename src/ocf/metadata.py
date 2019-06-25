@@ -10,32 +10,29 @@ class Metadata():
         self.name = "default-name"
         self.version = "1.0"
         self.descriptions = ocf.description.DescriptionContainer()
-        self.parameters = {}
-        self.actions  = {}
+        self.parameters = ocf.parameter.ParameterContainer()
+        self.actions  = ocf.action.ActionContainer()
         self.__makeDefaultActions()
         self.__makeDefaultDescriptions()
 
     def __makeDefaultActions(self):
-        self.__addAction( ocf.action.Action('start') )
-        self.__addAction( ocf.action.Action('stop') )
-        self.__addAction( ocf.action.Action('monitor') )
-        self.__addAction( ocf.action.Action('validate-all') )
-        self.__addAction( ocf.action.Action('meta-data') )
-        self.__addAction( ocf.action.Action('promote') )
-        self.__addAction( ocf.action.Action('demote') )
-        self.__addAction( ocf.action.Action('migrate_to') )
-        self.__addAction( ocf.action.Action('migrate_from') )
-        self.__addAction( ocf.action.Action('notify') )
+        self.actions.add( ocf.action.Action('start') )
+        self.actions.add( ocf.action.Action('stop') )
+        self.actions.add( ocf.action.Action('monitor') )
+        self.actions.add( ocf.action.Action('validate-all') )
+        self.actions.add( ocf.action.Action('meta-data') )
+        self.actions.add( ocf.action.Action('promote') )
+        self.actions.add( ocf.action.Action('demote') )
+        self.actions.add( ocf.action.Action('migrate_to') )
+        self.actions.add( ocf.action.Action('migrate_from') )
+        self.actions.add( ocf.action.Action('notify') )
 
     def __makeDefaultDescriptions(self):
         self.setDescription('TODO: add short description', \
                 'TODO: add long description')
 
-    def __addAction(self, action):
-        self.actions[action.getName()] = action
-
     def setActionHint(self, actionName, hintName, hintValue):
-        self.actions[actionName].setHint(hintName, hintValue)
+        self.actions.setHint(actionName, hintName, hintValue)
 
     def disableAction(self, actionName):
         del self.action[actionName]
@@ -55,11 +52,11 @@ class Metadata():
         return self
 
     def clearParameters(self):
-        self.parameters = {}
+        self.parameters.clear()
 
     def createParameter(self, name):
         createdParameter = ocf.parameter.Parameter(name)
-        self.parameters[name] = createdParameter
+        self.parameters.set(createdParameter)
         return createdParameter
 
     def print(self):
@@ -92,19 +89,12 @@ class Metadata():
                 .appendToParentXml()
     
     def __addParameters(self):
-        parametersElement = etree.SubElement(self.xmlRoot, "parameters")
-        for key in self.parameters:
-            parameter = self.parameters[key]
-            parameter.setParentXml(parametersElement) \
-                .addXmlToParent()
+        self.parameters.setParentXml(self.xmlRoot) \
+                .appendToParentXml()
 
     def __addActions(self):
-        actionsElement = etree.SubElement(self.xmlRoot, 'actions')
-        for actionKey in self.actions:
-            action = self.actions[actionKey]
-            action.setParentXml(actionsElement) \
-                    .appendToParentXml()
-            
+        self.actions.setParentXml(self.xmlRoot) \
+                .appendToParentXml()
 
     def __xmlToString(self):
         self.xmlContent = etree.tostring(self.xmlTree, pretty_print=True).decode('utf-8')

@@ -1,5 +1,26 @@
 from lxml import etree
 
+class ActionContainer():
+    def __init__(self):
+        self.actions  = {}
+
+    def add(self, action):
+        self.actions[action.getName()] = action
+
+    def setHint(self, actionName, hintName, hintValue):
+        self.actions[actionName].setHint(hintName, hintValue)
+
+    def setParentXml(self, parentXml):
+        self.parentXml = parentXml
+        return self
+    
+    def appendToParentXml(self):
+        actionsElement = etree.SubElement(self.parentXml, 'actions')
+        for actionKey in self.actions:
+            action = self.actions[actionKey]
+            action.setParentXml(actionsElement) \
+                    .appendToParentXml()
+
 class Action():
     def __init__(self, name):
         self.name = name

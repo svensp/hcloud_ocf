@@ -1,6 +1,27 @@
 from lxml import etree
 import ocf.description
 
+class ParameterContainer():
+    def __init__(self):
+        self.parameters = {}
+
+    def clearParameters(self):
+        self.parameters = {}
+
+    def set(self, parameter):
+        self.parameters[parameter.name] = parameter
+
+    def setParentXml(self, parentXml):
+        self.parentXml = parentXml
+        return self
+
+    def appendToParentXml(self):
+        parametersElement = etree.SubElement(self.parentXml, "parameters")
+        for key in self.parameters:
+            parameter = self.parameters[key]
+            parameter.setParentXml(parametersElement) \
+                .addXmlToParent()
+
 class Parameter():
     CONTENT_TYPE_BOOL = 'boolean'
     CONTENT_TYPE_STRING = 'string'
