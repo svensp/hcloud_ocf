@@ -23,7 +23,7 @@ class TestCase(unittest.TestCase):
 
     def assertXmlValid(self):
         valid = self.dtd.validate(self.xmlTreeObject)
-        self.assertTrue(valid, 'Metadata XML is not valid')
+        self.assertTrue(valid, 'Metadata XML is not valid: '+str(self.dtd.error_log.filter_from_errors()) )
 
     def assertSetUpRuns(self):
         pass

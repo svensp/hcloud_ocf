@@ -9,6 +9,19 @@ class OcfMetadataActionsTest(TestCase):
 
         self.assertXmlHasXpath('/resource-agent/actions')
 
+    def testAdds10SecondTimeoutByDefault(self):
+        self.loadXml()
+
+        self.assertXmlHasXpath('/resource-agent/actions/action',
+                {"name":"start", "timeout":"10"})
+
+    def testCanSetTimeout(self):
+        self.metadata.setActionHint("start", "timeout", 50)
+        self.loadXml()
+
+        self.assertXmlHasXpath('/resource-agent/actions/action',
+                {"name":"start", "timeout":"50"})
+
     def testAddsStartActionByDefault(self):
         self.loadXml()
 
@@ -66,10 +79,3 @@ class OcfMetadataActionsTest(TestCase):
 
         self.assertXmlHasXpath('/resource-agent/actions/action',
                 {"name":"notify"})
-
-    def testMetadataValidates(self):
-        # deactivated until schema building is tested
-        return
-        self.loadSchema()
-        self.loadXml()
-        self.assertXmlValid()

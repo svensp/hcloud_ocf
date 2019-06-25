@@ -13,6 +13,7 @@ class Metadata():
         self.parameters = {}
         self.actions  = {}
         self.__makeDefaultActions()
+        self.__makeDefaultDescriptions()
 
     def __makeDefaultActions(self):
         self.__addAction( ocf.action.Action('start') )
@@ -26,8 +27,15 @@ class Metadata():
         self.__addAction( ocf.action.Action('migrate_from') )
         self.__addAction( ocf.action.Action('notify') )
 
+    def __makeDefaultDescriptions(self):
+        self.setDescription('TODO: add short description', \
+                'TODO: add long description')
+
     def __addAction(self, action):
         self.actions[action.getName()] = action
+
+    def setActionHint(self, actionName, hintName, hintValue):
+        self.actions[actionName].setHint(hintName, hintValue)
 
     def disableAction(self, actionName):
         del self.action[actionName]
@@ -63,7 +71,6 @@ class Metadata():
         self.__addActions()
         self.__xmlToString()
         self.__printFullXml()
-        #self.printExampleXml()
 
     def __prepareXmlWithResourceAgentTag(self):
         self.xmlTree = etree.parse(StringIO('''<?xml version="1.0"?>
@@ -104,95 +111,3 @@ class Metadata():
 
     def __printFullXml(self):
         self.printer.print(self.xmlContent)
-
-    def printExampleXml(self):
-        self.printer.print('''<?xml version="1.0"?>
-
-<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
-
-<resource-agent name="gday" version="0.1">
-
-  <version>0.1</version>
-
-  <longdesc lang="en">
-
-This is a fictitious example resource agent written for the
-
-OCF Resource Agent Developers Guide.
-
-  </longdesc>
-
-  <shortdesc lang="en">Example resource agent
-
-  for budding OCF RA developers</shortdesc>
-
-  <parameters>
-
-    <parameter name="eggs" unique="0" required="1">
-
-      <longdesc lang="en">
-
-      Number of eggs, an example numeric parameter
-
-      </longdesc>
-
-      <shortdesc lang="en">Number of eggs</shortdesc>
-
-      <content type="integer"/>
-
-    </parameter>
-
-    <parameter name="superfrobnicate" unique="0" required="0">
-
-      <longdesc lang="en">
-
-      Enable superfrobnication, an example boolean parameter
-
-      </longdesc>
-
-      <shortdesc lang="en">Enable superfrobnication</shortdesc>
-
-      <content type="boolean" default="false"/>
-
-    </parameter>
-
-    <parameter name="datadir" unique="0" required="1">
-
-      <longdesc lang="en">
-
-      Data directory, an example string parameter
-
-      </longdesc>
-
-      <shortdesc lang="en">Data directory</shortdesc>
-
-      <content type="string"/>
-
-    </parameter>
-
-  </parameters>
-
-  <actions>
-
-    <action name="start"        timeout="20" />
-
-    <action name="stop"         timeout="20" />
-
-    <action name="monitor"      timeout="20"
-
-                                interval="10" depth="0" />
-
-    <action name="reload"       timeout="20" />
-
-    <action name="migrate_to"   timeout="20" />
-
-    <action name="migrate_from" timeout="20" />
-
-    <action name="meta-data"    timeout="5" />
-
-    <action name="validate-all"   timeout="20" />
-
-  </actions>
-
-</resource-agent>
-        ''')

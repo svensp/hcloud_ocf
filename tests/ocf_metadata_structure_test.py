@@ -36,6 +36,14 @@ class OcfMetadataStructureTest(TestCase):
         self.loadXml()
         self.assertXmlHasElementText('/resource-agent/version', '1.0.0')
 
+    def testMetadataHasDefaultLongDescription(self):
+        self.loadXml()
+        self.assertXmlHasElementText('/resource-agent/longdesc', 'TODO: add long description')
+
+    def testMetadataHasDefaultShortDescription(self):
+        self.loadXml()
+        self.assertXmlHasElementText('/resource-agent/shortdesc', 'TODO: add short description')
+
     def testMetadataHasLongDescription(self):
         self.metadata.setDescription('short description', 'long description', 'en')
         self.loadXml()
@@ -65,3 +73,11 @@ class OcfMetadataStructureTest(TestCase):
         self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description en', {"lang":"en"})
         self.assertXmlHasElementText('/resource-agent/longdesc', 'long description de', {"lang":"de"})
         self.assertXmlHasElementText('/resource-agent/shortdesc', 'short description de', {"lang":"de"})
+
+    def testMetadataValidates(self):
+        # deactivated until schema building is tested
+        self.loadSchema()
+        self.metadata.createParameter('test')
+        self.loadXml()
+        print(self.printer.log)
+        self.assertXmlValid()

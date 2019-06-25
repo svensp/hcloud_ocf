@@ -13,6 +13,10 @@ class Parameter():
         self.descriptions = ocf.description.DescriptionContainer()
         self.contentType = self.CONTENT_TYPE_BOOL
         self.defaultValue = None
+        self.__setDefaultDescription()
+
+    def __setDefaultDescription(self):
+        self.setDescription('TODO: short description', 'TODO: long description')
 
     def setContentType(self, contentType):
         self.contentType = contentType

@@ -29,9 +29,9 @@ class Description():
         return self
 
     def appendToParentXml(self):
-        shortDescriptionElement = etree.SubElement(self.parentXml, "shortdesc")
-        shortDescriptionElement.set('lang', self.language)
-        shortDescriptionElement.text = self.shortDescription
         longDescriptionElement = etree.SubElement(self.parentXml, "longdesc")
         longDescriptionElement.set('lang', self.language)
         longDescriptionElement.text = self.longDescription
+        shortDescriptionElement = etree.SubElement(self.parentXml, "shortdesc")
+        shortDescriptionElement.set('lang', self.language)
+        shortDescriptionElement.text = self.shortDescription

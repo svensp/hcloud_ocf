@@ -77,6 +77,18 @@ class OcfMetadataTest(TestCase):
                 { "name":"test-parameter",
                     "required":"0" })
 
+    def testParametersHaveDefaultDescription(self):
+        parameter = self.metadata.createParameter("test-parameter")
+
+        self.loadXml()
+
+        self.assertXmlHasElementText('/resource-agent/parameters/parameter/shortdesc',
+                "TODO: short description",
+                { "lang":"en" })
+        self.assertXmlHasElementText('/resource-agent/parameters/parameter/longdesc',
+                "TODO: long description",
+                { "lang":"en" })
+
     def testParametersDescriptionsAreAddedAsElement(self):
         parameter = self.metadata.createParameter("test-parameter")
         parameter.setDescription("short description", "long description", "en")
