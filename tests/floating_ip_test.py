@@ -1,8 +1,8 @@
 import unittest
-import floating_ip
+from ip.agent import FloatingIp
 
 class FloatingIpTest(unittest.TestCase):
 
     def test_exists(self):
-        floatingIp = floating_ip.FloatingIp()
+        floatingIp = FloatingIp()
         pass

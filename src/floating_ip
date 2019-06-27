@@ -1,0 +1,9 @@
+#!/usr/bin/python3
+from ip.agent import FloatingIp
+import sys
+
+if __name__ == '__main__':
+    floatingIp = FloatingIp()
+    result = floatingIp.run()
+    sys.exit(result)
+    

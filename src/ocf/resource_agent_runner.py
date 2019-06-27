@@ -11,6 +11,12 @@ class ResourceAgentRunner:
         return self
     
     def run(self):
+        self.resourceAgent.buildPreValidation()
+
+        self.validate()
+
+        self.resourceAgent.build()
+
         actionSwitcher = {
             "start": self.resourceAgent.start,
             "stop": self.resourceAgent.stop,
@@ -24,5 +30,15 @@ class ResourceAgentRunner:
             "meta-data": self.resourceAgent.metaData,
         }
         func = actionSwitcher.get(self.action, self.resourceAgent.help)
-        returnCode = func()
+        try:
+            returnCode = func()
+        except ocf.exception.Exception as e:
+            returnCode = e.getReturnCode()
         return returnCode.getValue()
+
+    def validate(self):
+        if not self.resourceAgent.isValidated(self.action):
+            return
+
+        self.resourceAgent.validate()
+        

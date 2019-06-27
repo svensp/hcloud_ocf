@@ -14,6 +14,25 @@ class ResourceAgent(abc.ABC):
         self.runner = runner
         self.printer = printer
         self.meta = meta
+        self.validatedActions = [
+                'start',
+                'stop',
+                'monitor',
+                'status',
+                'promote',
+                'demote',
+                'migrate_to',
+                'migrate_from',
+                ]
+
+    def buildPreValidation(self):
+        pass
+
+    def isValidated(self, action):
+        return action in self.validatedActions
+
+    def build(self):
+        pass
 
     @abstractmethod
     def start(self):
@@ -24,7 +43,7 @@ class ResourceAgent(abc.ABC):
         pass
 
     def stop(self):
-        pass
+        return ocf.return_codes.Success()
 
     def promote(self):
         raise ocf.exception.Exception( ocf.return_codes.UnimplementedError() )
