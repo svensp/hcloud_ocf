@@ -42,7 +42,11 @@ class FloatingIp(ResourceAgent):
         self.assignIpToServer()
 
     def monitor(self):
-        pass
+        self.retrieveServer()
+
+        self.retrieveIp()
+
+        self.assertAssignedToServer()
 
     def retrieveServer(self):
         self.server = self.server.retrieve()
@@ -52,3 +56,6 @@ class FloatingIp(ResourceAgent):
 
     def assignIpToServer(self):
         self.ip.setTargetServer(self.server).assign()
+
+    def assertAssignedToServer(self):
+        self.ip.setTargetServer(self.server).assertAssigned()

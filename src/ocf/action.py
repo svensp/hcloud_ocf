@@ -8,7 +8,6 @@ class ActionContainer():
         self.actions[action.getName()] = action
 
     def remove(self, actionName):
-        print(str(self.actions))
         del self.actions[actionName]
 
     def setHint(self, actionName, hintName, hintValue):
