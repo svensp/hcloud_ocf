@@ -35,7 +35,7 @@ class Metadata():
         self.actions.setHint(actionName, hintName, hintValue)
 
     def disableAction(self, actionName):
-        del self.action[actionName]
+        self.actions.remove(actionName)
 
     def setDescription(self, shortDescription, longDescription, language = 'en'):
         newDescription = ocf.description.Description(shortDescription, longDescription, language)

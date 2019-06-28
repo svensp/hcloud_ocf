@@ -7,6 +7,10 @@ class ActionContainer():
     def add(self, action):
         self.actions[action.getName()] = action
 
+    def remove(self, actionName):
+        print(str(self.actions))
+        del self.actions[actionName]
+
     def setHint(self, actionName, hintName, hintValue):
         self.actions[actionName].setHint(hintName, hintValue)
 

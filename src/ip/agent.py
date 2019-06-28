@@ -28,6 +28,11 @@ class FloatingIp(ResourceAgent):
                 will always be sent to loopback and not leave the server, regardless
                 whether or not the server currently has the ip address.
                 ''')
+        self.meta.disableAction('promote')
+        self.meta.disableAction('demote')
+        self.meta.disableAction('migrate_from')
+        self.meta.disableAction('migrate_to')
+        self.meta.disableAction('notify')
 
     def start(self):
         self.retrieveServer()
