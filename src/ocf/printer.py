@@ -1,5 +1,5 @@
 class Printer:
-    def print(message):
+    def print(self, message):
         print(message)
 
 class BagPrinter(Printer):
