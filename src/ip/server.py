@@ -1,2 +1,3 @@
 class Server:
-    pass
+    def retrieve(self):
+        pass

@@ -1,7 +1,21 @@
 from ocf.resource_agent import ResourceAgent
+from ip.server import Server
+from ip.ip import Ip
+from ip.builder import Builder
 
 class FloatingIp(ResourceAgent):
-    def __init__(self):
+    def __init__(self, server = None, ip = None, builder = None):
+        if server is None:
+            server = Server()
+        if ip is None:
+            ip = Ip()
+        if builder is None:
+            builder = Builder()
+            
+        self.server = server
+        self.ip = ip
+        self.builder = builder
+
         super().__init__()
         self.meta.setDescription(
                 'Control a hetzner cloud floating ip address',
@@ -33,6 +47,12 @@ class FloatingIp(ResourceAgent):
         self.meta.disableAction('migrate_from')
         self.meta.disableAction('migrate_to')
         self.meta.disableAction('notify')
+
+    def buildPreValidation(self):
+        self.builder.setTarget(self).buildPreValidation()
+
+    def build(self):
+        self.builder.setTarget(self).build()
 
     def start(self):
         self.retrieveServer()
