@@ -10,7 +10,7 @@ import stonith_agent
 import time
 import unittest
 from unittest import mock
-from mock import Mock
+from mock import Mock, MagicMock
 import stonith_agent
 
 class TestBase(Base.TestBase):
@@ -33,7 +33,8 @@ class TestBase(Base.TestBase):
     def test_action_is_repeatet_after_wait_on_action_server_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        self.serverAction(server).side_effect = [hetznercloud.HetznerInternalServerErrorException('502'), server]
+        self.serverAction(server).side_effect = \
+        [hetznercloud.HetznerInternalServerErrorException('502'), MagicMock() ]
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert self.serverAction(server).call_count == 2
@@ -44,7 +45,8 @@ class TestBase(Base.TestBase):
     def test_action_is_repeatet_after_wait_on_action_rate_limit_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        self.serverAction(server).side_effect = [hetznercloud.HetznerRateLimitExceeded('502'), server]
+        self.serverAction(server).side_effect = [hetznercloud.HetznerRateLimitExceeded('502'), \
+                MagicMock()]
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert self.serverAction(server).call_count == 2
@@ -55,7 +57,9 @@ class TestBase(Base.TestBase):
     def test_action_is_repeatet_after_wait_on_action_action_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        self.serverAction(server).side_effect = [hetznercloud.HetznerActionException('502'), server]
+        self.serverAction(server).side_effect = \
+        [hetznercloud.HetznerActionException('502'), \
+                MagicMock()]
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert self.serverAction(server).call_count == 2
@@ -66,7 +70,22 @@ class TestBase(Base.TestBase):
     def test_action_is_repeatet_after_wait_on_action_action_error(self, client, hostFinder, sleep):
         server, hostFinder, agent = self.makeBase(client, hostFinder)
         agent.client = client
-        self.serverAction(server).side_effect = [ValueError('json decode error'), server]
+        self.serverAction(server).side_effect = \
+                [ValueError('json decode error'), MagicMock()]
+        self.takeAction(agent)
+        assert sleep.call_count == 1
+        assert self.serverAction(server).call_count == 2
+
+    @mock.patch('time.sleep')
+    @mock.patch('shared.HostFinder')
+    @mock.patch('hetznercloud.HetznerCloudClient')
+    def test_action_is_repeatet_after_wait_on_action_action_exception(self, client, hostFinder, sleep):
+        server, hostFinder, agent = self.makeBase(client, hostFinder)
+        agent.client = client
+        serverAction = MagicMock()
+        serverAction.wait_until_status_is = \
+            Mock(side_effect=hetznercloud.HetznerWaitAttemptsExceededException())
+        self.serverAction(server).side_effect = [serverAction, MagicMock()]
         self.takeAction(agent)
         assert sleep.call_count == 1
         assert self.serverAction(server).call_count == 2

@@ -8,10 +8,13 @@
 import time
 import stonith
 import shared
-from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient
+from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient, \
+        ACTION_STATUS_SUCCESS
 from hetznercloud.servers import HetznerCloudServer
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
-from hetznercloud.exceptions import HetznerAuthenticationException, HetznerInternalServerErrorException, HetznerActionException, HetznerRateLimitExceeded
+from hetznercloud.exceptions import HetznerAuthenticationException, \
+        HetznerInternalServerErrorException, HetznerActionException, \
+        HetznerRateLimitExceeded, HetznerWaitAttemptsExceededException
 
 class FindHostException(Exception):
     def __init__(self, code):
@@ -142,8 +145,12 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host.power_on()
+                    powerOnAction = host.power_on()
+                    powerOnAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
+                           attempts=5, wait_seconds=self.wait)
                     success = True
+                except HetznerWaitAttemptsExceededException:
+                    time.sleep(self.wait)
                 except HetznerInternalServerErrorException:
                     time.sleep(self.wait)
                 except HetznerRateLimitExceeded:
@@ -169,8 +176,12 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host.power_off()
+                    powerOffAction = host.power_off()
+                    powerOffAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
+                           attempts=5, wait_seconds=self.wait)
                     success = True
+                except HetznerWaitAttemptsExceededException:
+                    time.sleep(self.wait)
                 except HetznerInternalServerErrorException:
                     time.sleep(self.wait)
                 except HetznerRateLimitExceeded:
@@ -196,8 +207,12 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host.reset()
+                    resetAction  = host.reset()
+                    resetAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
+                           attempts=5, wait_seconds=self.wait)
                     success = True
+                except HetznerWaitAttemptsExceededException:
+                    time.sleep(self.wait)
                 except HetznerInternalServerErrorException:
                     time.sleep(self.wait)
                 except HetznerActionException:

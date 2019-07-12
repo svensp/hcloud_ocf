@@ -9,7 +9,7 @@ import stonith_agent
 import time
 import unittest
 from unittest import mock
-from mock import Mock
+from mock import Mock, MagicMock
 import stonith_agent
 
 class TestBase(abc.ABC):
@@ -21,9 +21,9 @@ class TestBase(abc.ABC):
     def makeBase(self, client, hostFinder):
         server = hetznercloud.servers.HetznerCloudServer([])
         server.id = 51
-        server.power_on = Mock()
-        server.power_off = Mock()
-        server.reset = Mock()
+        server.power_on = Mock(return_value=MagicMock())
+        server.power_off = Mock(return_value=MagicMock())
+        server.reset = Mock(return_value=MagicMock())
         hostFinder.find = Mock(return_value=server)
         agent = stonith_agent.Stonith()
         agent.hostFinder = hostFinder
