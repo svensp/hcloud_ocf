@@ -13,6 +13,7 @@ class ResourceAgent(abc.ABC):
             meta = None):
         if meta is None:
             meta = ocf.metadata.Metadata() 
+        self.validators  = []
         self.runner = runner
         self.printer = printer
         self.meta = meta
@@ -63,6 +64,9 @@ class ResourceAgent(abc.ABC):
         return ocf.return_codes.Success()
 
     def validate(self):
+        for validator in self.validators:
+            validator.setAgent(self).validate()
+            
         return ocf.return_codes.Success()
 
     def metaData(self):

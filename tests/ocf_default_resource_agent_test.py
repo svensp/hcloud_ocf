@@ -4,7 +4,7 @@ import ocf.default_resource_agent
 import ocf.exception
 import ocf.return_codes
 import ocf.printer
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 import xml.etree.ElementTree as ET
 
 class OcfDefaultResourceAgentTest(unittest.TestCase):
@@ -62,6 +62,17 @@ class OcfDefaultResourceAgentTest(unittest.TestCase):
             self.resourceAgent.validate = unittest.mock.Mock(name="validate "+action)
             self.resourceAgent.run(action)
             self.resourceAgent.validate.assert_not_called()
+
+    def testValidateRunsAddedValidator(self):
+        self.validator = MagicMock()
+        self.validator.setAgent = Mock(name='validator.setAgent', return_value=self.validator)
+        self.resourceAgent.validators.append(self.validator)
+
+        self.resourceAgent.validate()
+
+        self.validator.setAgent.assert_called_with(self.resourceAgent)
+        self.validator.validate.assert_called()
+
 
     def testRunsMonitorOnMonitor(self):
         self.resourceAgent.monitor = unittest.mock.Mock(name="monitor")

@@ -4,9 +4,15 @@ import ocf.config
 
 class OcfConfigTest(unittest.TestCase):
 
-    @unittest.mock.patch('os.environ')
-    def setUp(self, environ):
-        self.ocfConfig = ocf.config.Config(environ)
+    def testGetReturnsOcfReskeyValue(self):
+        self.buildConfig({
+            "OCF_RESKEY_kekse":"a"
+            })
+        self.assertEqual( 'a', self.config.get('kekse') )
 
-    def testOcfConfigExists(self):
+    @unittest.mock.patch('os.environ')
+    def testWorksWithEnviron(self, environ):
         pass
+
+    def buildConfig(self, values):
+        self.config = ocf.config.Config(values)

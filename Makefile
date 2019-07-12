@@ -4,6 +4,9 @@ floating_ip:
 
 hetzner_cloud:
 
+requirements:
+	pip3 install cerberus
+
 clean:
 	rm -Rf build dist **/__pycache__
 
