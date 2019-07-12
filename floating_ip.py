@@ -9,9 +9,11 @@ import ocf
 import time
 import shared
 from ocf import AbortWithError
-from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient
+from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient, ACTION_STATUS_SUCCESS
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
-from hetznercloud.exceptions import HetznerAuthenticationException, HetznerInternalServerErrorException, HetznerActionException, HetznerRateLimitExceeded
+from hetznercloud.exceptions import HetznerAuthenticationException, \
+        HetznerInternalServerErrorException, HetznerActionException, \
+        HetznerRateLimitExceeded, HetznerWaitAttemptsExceededException
 
 class IpFinder:
      def find(self, client, address) -> HetznerCloudFloatingIp:
@@ -159,8 +161,11 @@ class FloatingIp(ocf.ResourceAgent):
             success = False
             while not success:
                 try:
-                    ip.assign_to_server( server.id )
+                    assignAction = ip.assign_to_server( server.id )
+                    assignAction.wait_until_status_is(ACTION_STATUS_SUCCESS, attempts=5, wait_seconds=self.wait)
                     success = True
+                except HetznerWaitAttemptsExceededException:
+                    time.sleep( self.wait )
                 except HetznerActionException:
                     time.sleep( self.wait )
                 except HetznerInternalServerErrorException:
