@@ -10,7 +10,7 @@ import stonith
 import shared
 from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient, \
         ACTION_STATUS_SUCCESS
-from hetznercloud.servers import HetznerCloudServer
+from hetznercloud.servers import HetznerCloudServer, SERVER_STATUS_OFF
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
 from hetznercloud.exceptions import HetznerAuthenticationException, \
         HetznerInternalServerErrorException, HetznerActionException, \
@@ -167,19 +167,20 @@ class Stonith():
         return stonith.ReturnCodes.success
 
     def powerOff(self):
-        try: 
-            host = self.findServer()
-        except FindHostException as e:
-            return e.code
-
         try:
             success = False
             while not success:
                 try:
+                    host = self.findServer()
+                    if host.status == SERVER_STATUS_OFF:
+                        return stonith.ReturnCodes.success
+
                     powerOffAction = host.power_off()
                     powerOffAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
                            attempts=5, wait_seconds=self.wait)
                     success = True
+                except FindHostException as e:
+                    return e.code
                 except HetznerWaitAttemptsExceededException:
                     time.sleep(self.wait)
                 except HetznerInternalServerErrorException:
@@ -198,19 +199,20 @@ class Stonith():
         return stonith.ReturnCodes.success
 
     def powerReset(self):
-        try: 
-            host = self.findServer()
-        except FindHostException as e:
-            return e.code
-
         try:
             success = False
             while not success:
                 try:
+                    host = self.findServer()
+                    if host.status == SERVER_STATUS_OFF:
+                        return stonith.ReturnCodes.success
+
                     resetAction  = host.reset()
                     resetAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
                            attempts=5, wait_seconds=self.wait)
                     success = True
+                except FindHostException as e:
+                    return e.code
                 except HetznerWaitAttemptsExceededException:
                     time.sleep(self.wait)
                 except HetznerInternalServerErrorException:
