@@ -270,7 +270,7 @@ class Stonith():
             print('Error: Cloud Api returned Authentication error. Token deleted?')
             raise FindHostException(stonith.ReturnCodes.isMissconfigured)
 
-        return host
+        return self.host
 
     def infoId(self):
         print ("hetzner_cloud")
