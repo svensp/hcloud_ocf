@@ -9,7 +9,7 @@ import time
 import stonith
 import shared
 from hetznercloud import HetznerCloudClientConfiguration, HetznerCloudClient, \
-        ACTION_STATUS_SUCCESS
+        ACTION_STATUS_SUCCESS, SERVER_STATUS_STOPPING
 from hetznercloud.servers import HetznerCloudServer, SERVER_STATUS_OFF
 from hetznercloud.floating_ips import HetznerCloudFloatingIp
 from hetznercloud.exceptions import HetznerAuthenticationException, \
@@ -137,7 +137,7 @@ class Stonith():
 
     def powerOn(self):
         try: 
-            host = self.findServer()
+            self.findServer()
         except FindHostException as e:
             return e.code
 
@@ -145,7 +145,7 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    powerOnAction = host.power_on()
+                    powerOnAction = self.host.power_on()
                     powerOnAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
                            attempts=5, wait_seconds=self.wait)
                     success = True
@@ -171,11 +171,16 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host = self.findServer()
-                    if host.status == SERVER_STATUS_OFF:
+                    self.findServer()
+                    if self.host.status == SERVER_STATUS_STOPPING:
+                        self.host.wait_until_status_is(SERVER_STATUS_OFF, \
+                           attempts=5, wait_seconds=self.wait)
                         return stonith.ReturnCodes.success
 
-                    powerOffAction = host.power_off()
+                    if self.host.status == SERVER_STATUS_OFF:
+                        return stonith.ReturnCodes.success
+
+                    powerOffAction = self.host.power_off()
                     powerOffAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
                            attempts=5, wait_seconds=self.wait)
                     success = True
@@ -203,11 +208,16 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host = self.findServer()
-                    if host.status == SERVER_STATUS_OFF:
+                    self.findServer()
+                    if self.host.status == SERVER_STATUS_STOPPING:
+                        self.host.wait_until_status_is(ACTION_STATUS_OFF, \
+                               attempts=5, wait_seconds=self.wait)
+                        return stonith.ReturnCodes.success
+                        
+                    if self.host.status == SERVER_STATUS_OFF:
                         return stonith.ReturnCodes.success
 
-                    resetAction  = host.reset()
+                    resetAction  = self.host.reset()
                     resetAction.wait_until_status_is(ACTION_STATUS_SUCCESS, \
                            attempts=5, wait_seconds=self.wait)
                     success = True
@@ -232,7 +242,7 @@ class Stonith():
 
     def status(self):
         try: 
-            host = self.findServer()
+            self.findServer()
         except FindHostException as e:
             return e.code
         return stonith.ReturnCodes.success
@@ -243,7 +253,7 @@ class Stonith():
             success = False
             while not success:
                 try:
-                    host = self.hostFinder.find(self.client)
+                    self.host = self.hostFinder.find(self.client)
                     success = True
                 except HetznerInternalServerErrorException:
                     time.sleep(self.wait)

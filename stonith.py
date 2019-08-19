@@ -19,6 +19,10 @@ class ReturnCodes:
     invalidArguments = 1
     isMissconfigured = 1
 
+class StonithException(RuntimeError):
+    def __init__(self, returnCode):
+        self.returnCode = returnCode
+
 class Api:
     def action(self):
         assert 1 < len(sys.argv)
@@ -77,7 +81,10 @@ class Runner:
             print("Action "+action+" not implemented.")
             return ReturnCodes.notImplemented
 
-        return actionMethod()
+        try:
+            return actionMethod()
+        except StonithException as e:
+            return e.returnCode
 
     def getConfigNames(self, resource):
         names = []
