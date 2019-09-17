@@ -22,6 +22,7 @@ the pacemaker stonith agent directory `/usr/lib/stonith/plugins/external/`.
 Example
 
 	pcs resource create stonith_hostX stonith:external/hetzner_cloud api_token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+	pcs constraint location stonith_hostX avoids hostX
 
 ### Options
 #### Required
