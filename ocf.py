@@ -88,10 +88,12 @@ class AgentRunner:
                 pass
 
         tree = ET.ElementTree(root)
-        print( ET.tostring(tree, encoding="UTF-8",
+        xml =  ET.tostring(tree, encoding='UTF-8',
                      xml_declaration=True,
                      pretty_print=True,
-                     doctype='<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">').decode('UTF-8'))
+                     doctype='<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">').decode('UTF-8')
+        xmlWithoutEncoding = xml.replace("encoding='UTF-8'", '')
+        print(xmlWithoutEncoding)
 
     def validate(self, resource):
         self.populater.populate(resource)
