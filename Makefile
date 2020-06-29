@@ -1,13 +1,16 @@
-all: floating_ip alias_ip hetzner_cloud
+all: requirements floating_ip alias_ip hetzner_cloud 
+
+requirements: requirements.txt
+	pip3 install -r requirements.txt
 
 floating_ip:
-	pyinstaller floating_ip.py
+	pyinstaller -F floating_ip.py
 
 alias_ip:
-	pyinstaller alias_ip.py
+	pyinstaller -F alias_ip.py
 
 hetzner_cloud:
-	pyinstaller hetzner_cloud.py
+	pyinstaller -F hetzner_cloud.py
 
 test:
 	nosetests tests/*
