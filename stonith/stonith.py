@@ -1,1 +1,0 @@
-../stonith.py

@@ -1,15 +1,15 @@
-all: requirements floating_ip alias_ip hetzner_cloud 
+all: requirements dist/floating_ip dist/alias_ip dist/hetzner_cloud 
 
 requirements: requirements.txt
 	pip3 install -r requirements.txt
 
-floating_ip:
+dist/floating_ip: floating_ip.py
 	pyinstaller -F floating_ip.py
 
-alias_ip:
+dist/alias_ip: alias_ip.py
 	pyinstaller -F alias_ip.py
 
-hetzner_cloud:
+dist/hetzner_cloud: hetzner_cloud.py
 	pyinstaller -F hetzner_cloud.py
 
 test:
