@@ -121,7 +121,7 @@ class FloatingIp(ocf.ResourceAgent):
                 time.sleep( self.rateLimitWait )
             except EnvironmentError: 
                 # Host not found in api
-                if self.failOnHostfindFailure.get() is 'true':
+                if self.failOnHostfindFailure.get() == 'true':
                     raise AbortWithError(ocf.ReturnCodes.isMissconfigured, 'Failed to find server')
                 time.sleep( self.wait )
 
@@ -143,7 +143,7 @@ class FloatingIp(ocf.ResourceAgent):
                 time.sleep( self.rateLimitWait )
             except EnvironmentError: 
                 # Ip not found in api
-                if self.failOnHostfindFailure.get() is 'true':
+                if self.failOnHostfindFailure.get() == 'true':
                     raise AbortWithError(ocf.ReturnCodes.isMissconfigured, 'Failed to find ip')
                 time.sleep( self.wait )
 
